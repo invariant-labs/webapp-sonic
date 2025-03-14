@@ -22,6 +22,6 @@ export const Primary: Story = {
     amount: 123,
     label: 'MAX',
     tokenX: 'BTC',
-    tokenY: 'ETH'
+    tokenY: 'SOL'
   }
 }

@@ -78,7 +78,7 @@ export const Primary: Story = {
     initialOpeningPositionMethod: 'concentration',
     initialSlippage: '0.01',
     initialTokenFrom: 'BTC',
-    initialTokenTo: 'ETH',
+    initialTokenTo: 'SOL',
     isCurrentPoolExisting: true,
     isWaitingForNewPool: false,
     onChangePositionTokens: fn(),
@@ -106,7 +106,7 @@ export const Primary: Story = {
     setOnlyUserPositions: fn(),
     network: NetworkType.Testnet,
     isLoadingTokens: false,
-    ethBalance: 200000000,
+    solBalance: 200000000,
     walletStatus: Status.Initialized,
     onConnectWallet: () => {},
     onDisconnectWallet: () => {},
@@ -142,7 +142,7 @@ export const Primary: Story = {
         currentPairReversed={false}
         isXtoY={true}
         initialTokenFrom='BTC'
-        initialTokenTo='ETH'
+        initialTokenTo='SOL'
         initialFee='0.05'
         initialSlippage='0.01'
         initialOpeningPositionMethod='concentration'
@@ -168,7 +168,7 @@ export const Primary: Story = {
         setOnlyUserPositions={fn()}
         network={NetworkType.Testnet}
         isLoadingTokens={false}
-        ethBalance={2000000000}
+        solBalance={2000000000}
         walletStatus={Status.Initialized}
         onConnectWallet={() => {}}
         onDisconnectWallet={() => {}}

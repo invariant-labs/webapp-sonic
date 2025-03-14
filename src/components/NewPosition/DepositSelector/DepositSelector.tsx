@@ -77,7 +77,7 @@ export interface IDepositSelector {
   isGetLiquidityError: boolean
   ticksLoading: boolean
   network: NetworkType
-  ethBalance: BN
+  solBalance: BN
   walletStatus: Status
   onConnectWallet: () => void
   onDisconnectWallet: () => void
@@ -124,7 +124,7 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
   walletStatus,
   onConnectWallet,
   onDisconnectWallet,
-  ethBalance,
+  solBalance,
   canNavigate,
   isCurrentPoolExisting
 }) => {
@@ -258,9 +258,9 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
         tokens[tokenAIndex].balance.lt(tokenABalance.add(WSOL_MIN_FEE_LAMPORTS))) ||
       (tokens[tokenBIndex].assetAddress.toString() === WRAPPED_SOL_ADDRESS &&
         tokens[tokenBIndex].balance.lt(tokenBBalance.add(WSOL_MIN_FEE_LAMPORTS))) ||
-      ethBalance.lt(WSOL_MIN_FEE_LAMPORTS)
+      solBalance.lt(WSOL_MIN_FEE_LAMPORTS)
     ) {
-      return `Insufficient ETH`
+      return `Insufficient SOL`
     }
 
     if (
@@ -501,9 +501,9 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
           onDisconnect={onDisconnectWallet}
           className={classes.connectWalletButton}
         />
-      ) : getButtonMessage() === 'Insufficient ETH' ? (
+      ) : getButtonMessage() === 'Insufficient SOL' ? (
         <TooltipHover
-          title='More ETH is required to cover the transaction fee. Obtain more ETH to complete this transaction.'
+          title='More SOL is required to cover the transaction fee. Obtain more SOL to complete this transaction.'
           top={-10}>
           <div>
             <AnimatedButton

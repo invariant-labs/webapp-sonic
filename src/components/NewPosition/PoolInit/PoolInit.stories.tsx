@@ -44,7 +44,7 @@ const PrimaryComponent: React.FC<typeof Primary.args> = args => {
       currentPairReversed={null}
       onChangeRange={fn()}
       tokenASymbol='BTC'
-      tokenBSymbol='ETH'
+      tokenBSymbol='SOL'
     />
   )
 }
@@ -58,7 +58,7 @@ export const Primary: Story = {
     onChangeRange: fn(),
     tickSpacing: 1,
     tokenASymbol: 'BTC',
-    tokenBSymbol: 'ETH',
+    tokenBSymbol: 'SOL',
     xDecimal: 9,
     yDecimal: 12,
     concentrationArray: [0.1, 0.2, 0.3, 0.4, 0.5],

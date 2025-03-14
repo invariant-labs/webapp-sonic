@@ -66,7 +66,7 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
   } = useSelector(currentPositionTicks)
 
   const walletStatus = useSelector(status)
-  const ethBalance = useSelector(balance)
+  const solBalance = useSelector(balance)
   const isBalanceLoading = useSelector(balanceLoading)
 
   const isTimeoutError = useSelector(timeoutError)
@@ -455,7 +455,7 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
         isLocked={position.isLocked}
         success={success}
         inProgress={inProgress}
-        ethBalance={ethBalance}
+        solBalance={solBalance}
       />
     )
   }

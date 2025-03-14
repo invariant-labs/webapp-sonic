@@ -120,7 +120,7 @@ export const Primary: Story = {
     isGetLiquidityError: false,
     ticksLoading: false,
     network: NetworkType.Testnet,
-    ethBalance: 20000000000,
+    solBalance: 20000000000,
     walletStatus: Status.Initialized,
     onConnectWallet: () => {},
     onDisconnectWallet: () => {},

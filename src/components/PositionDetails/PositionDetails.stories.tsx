@@ -30,7 +30,7 @@ const defaultArgs = {
     usdValue: new BN(123)
   },
   tokenY: {
-    name: 'ETH',
+    name: 'SOL',
     balance: new BN(432),
     claimValue: new BN(21),
     decimal: new BN(9),
@@ -53,7 +53,7 @@ const defaultArgs = {
   tokenYAddress: new PublicKey('22'),
   poolAddress: new PublicKey('32'),
   isLocked: false,
-  ethBalance: new BN(10000000)
+  solBalance: new BN(10000000)
 }
 
 const meta = {

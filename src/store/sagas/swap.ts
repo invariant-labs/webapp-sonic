@@ -32,7 +32,7 @@ import {
 import { networkTypetoProgramNetwork } from '@utils/web3/connection'
 import { actions as RPCAction, RpcStatus } from '@store/reducers/solanaConnection'
 
-export function* handleSwapWithETH(): Generator {
+export function* handleSwapWithSOL(): Generator {
   const loaderSwappingTokens = createLoaderKey()
   const loaderSigningTx = createLoaderKey()
 
@@ -78,7 +78,7 @@ export function* handleSwapWithETH(): Generator {
 
     const isXtoY = tokenFrom.equals(swapPool.tokenX)
 
-    const wrappedEthAccount = Keypair.generate()
+    const wrappedSolAccount = Keypair.generate()
 
     const net = networkTypetoProgramNetwork(networkType)
     let initialTx: Transaction
@@ -90,7 +90,7 @@ export function* handleSwapWithETH(): Generator {
         initIx,
         unwrapIx: unwrap
       } = createNativeAtaWithTransferInstructions(
-        wrappedEthAccount.publicKey,
+        wrappedSolAccount.publicKey,
         wallet.publicKey,
         net,
         amountIn.toNumber()
@@ -102,7 +102,7 @@ export function* handleSwapWithETH(): Generator {
         createIx,
         initIx,
         unwrapIx: unwrap
-      } = createNativeAtaInstructions(wrappedEthAccount.publicKey, wallet.publicKey, net)
+      } = createNativeAtaInstructions(wrappedSolAccount.publicKey, wallet.publicKey, net)
       unwrapIx = unwrap
       initialTx = new Transaction().add(createIx).add(initIx)
     }
@@ -113,7 +113,7 @@ export function* handleSwapWithETH(): Generator {
 
     let fromAddress =
       allTokens[tokenFrom.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[tokenFrom.toString()]
           ? tokensAccounts[tokenFrom.toString()].address
           : null
@@ -122,7 +122,7 @@ export function* handleSwapWithETH(): Generator {
     }
     let toAddress =
       allTokens[tokenTo.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[tokenTo.toString()]
           ? tokensAccounts[tokenTo.toString()].address
           : null
@@ -179,7 +179,7 @@ export function* handleSwapWithETH(): Generator {
     closeSnackbar(loaderSigningTx)
     yield put(snackbarsActions.remove(loaderSigningTx))
 
-    initialSignedTx.partialSign(wrappedEthAccount)
+    initialSignedTx.partialSign(wrappedSolAccount)
 
     const initialTxid = yield* call(
       sendAndConfirmRawTransaction,
@@ -198,7 +198,7 @@ export function* handleSwapWithETH(): Generator {
 
       return yield put(
         snackbarsActions.add({
-          message: 'ETH wrapping failed. Please try again',
+          message: 'SOL wrapping failed. Please try again',
           variant: 'error',
           persist: false,
           txid: initialTxid
@@ -221,7 +221,7 @@ export function* handleSwapWithETH(): Generator {
     //   return yield put(
     //     snackbarsActions.add({
     //       message:
-    //         'Tokens swapping failed. Please unwrap wrapped ETH in your wallet and try again.',
+    //         'Tokens swapping failed. Please unwrap wrapped SOL in your wallet and try again.',
     //       variant: 'error',
     //       persist: false,
     //       txid: swapTxid
@@ -252,7 +252,7 @@ export function* handleSwapWithETH(): Generator {
     // if (!unwrapTxid.length) {
     //   yield put(
     //     snackbarsActions.add({
-    //       message: 'Wrapped ETH unwrap failed. Try to unwrap it in your wallet.',
+    //       message: 'Wrapped SOL unwrap failed. Try to unwrap it in your wallet.',
     //       variant: 'warning',
     //       persist: false,
     //       txid: unwrapTxid
@@ -261,7 +261,7 @@ export function* handleSwapWithETH(): Generator {
     // } else {
     //   yield put(
     //     snackbarsActions.add({
-    //       message: 'ETH unwrapped successfully.',
+    //       message: 'SOL unwrapped successfully.',
     //       variant: 'success',
     //       persist: false,
     //       txid: unwrapTxid
@@ -330,7 +330,7 @@ export function* handleSwap(): Generator {
       allTokens[tokenFrom.toString()].address.toString() === WRAPPED_SOL_ADDRESS ||
       allTokens[tokenTo.toString()].address.toString() === WRAPPED_SOL_ADDRESS
     ) {
-      return yield* call(handleSwapWithETH)
+      return yield* call(handleSwapWithSOL)
     }
 
     const wallet = yield* call(getWallet)

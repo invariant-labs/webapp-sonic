@@ -13,7 +13,7 @@ export interface ITokenCreator {
   buttonText: string
   success: boolean
   inProgress: boolean
-  ethBalance: BN
+  solBalance: BN
   currentNetwork: NetworkType
 }
 
@@ -23,7 +23,7 @@ export const TokenCreator: React.FC<ITokenCreator> = ({
   buttonText,
   success,
   inProgress,
-  ethBalance,
+  solBalance,
   currentNetwork
 }) => {
   const { classes } = useStyles()
@@ -59,7 +59,7 @@ export const TokenCreator: React.FC<ITokenCreator> = ({
                 buttonText={buttonText}
                 success={success}
                 inProgress={inProgress}
-                ethBalance={ethBalance}
+                solBalance={solBalance}
                 currentNetwork={currentNetwork}
                 onConnectWallet={onConnectWallet}
               />

@@ -63,7 +63,7 @@ interface IProps {
   isLocked: boolean
   success: boolean
   inProgress: boolean
-  ethBalance: BN
+  solBalance: BN
 }
 
 const PositionDetails: React.FC<IProps> = ({
@@ -98,7 +98,7 @@ const PositionDetails: React.FC<IProps> = ({
   isLocked,
   success,
   inProgress,
-  ethBalance
+  solBalance
 }) => {
   const { classes } = useStyles()
 
@@ -249,7 +249,7 @@ const PositionDetails: React.FC<IProps> = ({
             setIsLockPositionModalOpen(true)
             blurContent()
           }}
-          ethBalance={ethBalance}
+          solBalance={solBalance}
         />
       </Grid>
       <Grid

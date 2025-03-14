@@ -313,7 +313,7 @@ export const PoolInit: React.FC<IPoolInit> = ({
         <Grid className={classes.infoWrapper}>
           <Typography className={classes.info}>
             This pool does not exist yet. To create it, select the fee tier, initial price, and
-            enter the amount of tokens. The estimated cost of creating a pool is ~0.001 ETH.
+            enter the amount of tokens. The estimated cost of creating a pool is ~0.001 SOL.
           </Typography>
         </Grid>
 

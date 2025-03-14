@@ -13,7 +13,7 @@ import { ensureError } from '@utils/utils'
 export const TokenCreatorWrapper: React.FC = () => {
   const currentNetwork = useSelector(network)
   const walletStatus = useSelector(status)
-  const ethBalance = useSelector(balance)
+  const solBalance = useSelector(balance)
   const { success, inProgress } = useSelector(creatorState)
 
   const dispatch = useDispatch()
@@ -46,7 +46,7 @@ export const TokenCreatorWrapper: React.FC = () => {
     <TokenCreator
       buttonText={buttonText}
       currentNetwork={currentNetwork}
-      ethBalance={ethBalance}
+      solBalance={solBalance}
       inProgress={inProgress}
       onConnectWallet={() => dispatch(walletActions.connect(false))}
       onSubmit={onSubmit}
