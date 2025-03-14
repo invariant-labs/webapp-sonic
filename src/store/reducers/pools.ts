@@ -23,8 +23,13 @@ export interface IPoolsStore {
   pools: { [key in string]: PoolWithAddress }
   poolTicks: { [key in string]: Tick[] }
   nearestPoolTicksForPair: { [key in string]: Tick[] }
+  autoSwapPool: PoolWithAddress | null
+  autoSwapTicks: Tick[]
+  autoSwapTickMap: Tickmap | null
   isLoadingLatestPoolsForTransaction: boolean
   isLoadingTicksAndTickMaps: boolean
+  isLoadingAutoSwapPool: boolean
+  isLoadingAutoSwapPoolTicksOrTickMap: boolean
   isLoadingTokens: boolean
   isLoadingPathTokens: boolean
   isLoadingTokensError: boolean
@@ -65,6 +70,17 @@ export interface FetchTicksAndTickMaps {
   allPools: PoolWithAddress[]
 }
 
+export interface IFetchTicksAndTickMapForAutoSwap {
+  tokenFrom: PublicKey
+  tokenTo: PublicKey
+  autoSwapPool: PoolWithAddress
+}
+
+export interface UpdateAutoSwapTicksAndTickmap {
+  tickmap: Tickmap
+  ticks: Tick[]
+}
+
 const network =
   NetworkType[localStorage.getItem('INVARIANT_NETWORK_SONIC') as keyof typeof NetworkType] ??
   NetworkType.Mainnet
@@ -72,13 +88,18 @@ const network =
 export const defaultState: IPoolsStore = {
   tokens: { ...getNetworkTokensList(network) },
   pools: {},
+  autoSwapPool: null,
+  autoSwapTicks: [],
+  autoSwapTickMap: null,
   poolTicks: {},
   nearestPoolTicksForPair: {},
   isLoadingLatestPoolsForTransaction: false,
+  isLoadingAutoSwapPool: false,
   isLoadingTicksAndTickMaps: false,
   isLoadingTokens: false,
   isLoadingPathTokens: false,
   isLoadingTokensError: false,
+  isLoadingAutoSwapPoolTicksOrTickMap: false,
   tickMaps: {},
   volumeRanges: {}
 }
@@ -145,6 +166,31 @@ const poolsSlice = createSlice({
         address: state.pools[action.payload.address.toString()].address,
         ...parsePool(action.payload.poolStructure)
       }
+      return state
+    },
+    getAutoSwapPoolData(state, _action: PayloadAction<Pair>) {
+      state.isLoadingAutoSwapPool = true
+      return state
+    },
+    setIsLoadingAutoSwapPool(state, action: PayloadAction<boolean>) {
+      state.isLoadingAutoSwapPool = action.payload
+      return state
+    },
+    setAutoSwapPoolData(state, action: PayloadAction<PoolWithAddress | null>) {
+      state.autoSwapPool = action.payload
+      return state
+    },
+    setAutoSwapTicksAndTickMap(state, action: PayloadAction<UpdateAutoSwapTicksAndTickmap>) {
+      state.autoSwapTickMap = action.payload.tickmap
+      state.autoSwapTicks = action.payload.ticks
+      return state
+    },
+    setIsLoadingAutoSwapPoolTicksOrTickMap(state, action: PayloadAction<boolean>) {
+      state.isLoadingAutoSwapPoolTicksOrTickMap = action.payload
+      return state
+    },
+    getTicksAndTickMapForAutoSwap(state, _action: PayloadAction<IFetchTicksAndTickMapForAutoSwap>) {
+      state.isLoadingAutoSwapPoolTicksOrTickMap = true
       return state
     },
     addPools(state, action: PayloadAction<PoolWithAddress[]>) {

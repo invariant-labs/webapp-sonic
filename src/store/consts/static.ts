@@ -1,4 +1,4 @@
-import { FEE_TIERS } from '@invariant-labs/sdk-sonic/lib/utils'
+import { FEE_TIERS, toDecimal } from '@invariant-labs/sdk-sonic/lib/utils'
 import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 import { ISnackbar } from '@store/reducers/snackbars'
@@ -8,6 +8,11 @@ import Dog1 from '@static/svg/SolanaCreator/Dog1.svg'
 import Dog2 from '@static/svg/SolanaCreator/Dog2.svg'
 import Cat1 from '@static/svg/SolanaCreator/Cat1.svg'
 import Cat2 from '@static/svg/SolanaCreator/Cat2.svg'
+
+export enum DepositOptions {
+  Basic = 'Basic',
+  Auto = 'Auto'
+}
 
 export enum NetworkType {
   Local = 'Local',
@@ -194,6 +199,11 @@ export const WSOL_CREATE_TOKEN_LAMPORTS_TEST = new BN(22000000)
 export const WSOL_CLOSE_POSITION_LAMPORTS_MAIN = new BN(2600000)
 export const WSOL_CLOSE_POSITION_LAMPORTS_TEST = new BN(2600000)
 
+export const WSOL_SWAP_AND_POSITION_INIT_LAMPORTS_MAIN = new BN(100000)
+export const WSOL_SWAP_AND_POSITION_INIT_LAMPORTS_TEST = new BN(100000)
+
+export const MINIMUM_PRICE_IMPACT = toDecimal(1, 4)
+
 export const getCreateTokenLamports = (network: NetworkType): BN => {
   switch (network) {
     case NetworkType.Testnet:
@@ -270,6 +280,10 @@ export const MINIMAL_POOL_INIT_PRICE = 0.00000001
 
 export const DEFAULT_SWAP_SLIPPAGE = '0.50'
 export const DEFAULT_NEW_POSITION_SLIPPAGE = '0.50'
+export const DEFAULT_AUTOSWAP_MAX_PRICE_IMPACT = '0.3'
+export const DEFAULT_AUTOSWAP_MIN_UTILIZATION = '95'
+export const DEFAULT_AUTOSWAP_MAX_SLIPPAGE_TOLERANCE_CREATE_POSITION = '0.50'
+export const DEFAULT_AUTOSWAP_MAX_SLIPPAGE_TOLERANCE_SWAP = '0.50'
 
 export const CHAINS = [
   { name: Chain.Solana, address: 'https://invariant.app/swap', iconGlow: 'solanaGlow' },
@@ -370,3 +384,14 @@ export const getPopularPools = (
       return []
   }
 }
+
+export const autoSwapPools: {
+  pair: {
+    tokenX: PublicKey
+    tokenY: PublicKey
+  }
+  swapPool: {
+    address: PublicKey
+    feeIndex: number
+  }
+}[] = []

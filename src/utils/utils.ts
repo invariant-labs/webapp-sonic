@@ -34,7 +34,10 @@ import {
   getMaxTick,
   getMinTick,
   PRICE_SCALE,
-  Range
+  Range,
+  simulateSwapAndCreatePosition,
+  simulateSwapAndCreatePositionOnTheSamePool,
+  toDecimal
 } from '@invariant-labs/sdk-sonic/lib/utils'
 import { PlotTickData, PositionWithAddress } from '@store/reducers/positions'
 import {
@@ -1915,4 +1918,89 @@ export const ROUTES = {
   },
 
   getPositionRoute: (id: string): string => `${ROUTES.POSITION}/${id}`
+}
+
+export const simulateAutoSwapOnTheSamePool = async (
+  amountX: BN,
+  amountY: BN,
+  pool: PoolWithAddress,
+  poolTicks: Tick[],
+  tickmap: Tickmap,
+  swapSlippage: BN,
+  lowerTick: number,
+  upperTick: number
+) => {
+  const ticks: Map<number, Tick> = new Map<number, Tick>()
+  for (const tick of poolTicks) {
+    ticks.set(tick.index, tick)
+  }
+
+  const maxCrosses =
+    pool.tokenX.toString() === WRAPPED_SOL_ADDRESS || pool.tokenY.toString() === WRAPPED_SOL_ADDRESS
+      ? MAX_CROSSES_IN_SINGLE_TX
+      : TICK_CROSSES_PER_IX
+
+  try {
+    const simulateResult = simulateSwapAndCreatePositionOnTheSamePool(
+      amountX,
+      amountY,
+      swapSlippage,
+      {
+        ticks,
+        tickmap,
+        pool,
+        maxVirtualCrosses: TICK_VIRTUAL_CROSSES_PER_IX,
+        maxCrosses
+      },
+      { lowerTick, upperTick }
+    )
+    return simulateResult
+  } catch (e) {
+    console.log(e)
+    return null
+  }
+}
+
+export const simulateAutoSwap = async (
+  amountX: BN,
+  amountY: BN,
+  pool: PoolWithAddress,
+  poolTicks: Tick[],
+  tickmap: Tickmap,
+  swapSlippage: BN,
+  positionSlippage: BN,
+  lowerTick: number,
+  upperTick: number,
+  knownPrice: BN
+) => {
+  const ticks: Map<number, Tick> = new Map<number, Tick>()
+  for (const tick of poolTicks) {
+    ticks.set(tick.index, tick)
+  }
+
+  const maxCrosses =
+    pool.tokenX.toString() === WRAPPED_SOL_ADDRESS || pool.tokenY.toString() === WRAPPED_SOL_ADDRESS
+      ? MAX_CROSSES_IN_SINGLE_TX
+      : TICK_CROSSES_PER_IX
+
+  try {
+    const simulateResult = simulateSwapAndCreatePosition(
+      amountX,
+      amountY,
+      {
+        ticks,
+        tickmap,
+        pool,
+        maxVirtualCrosses: TICK_VIRTUAL_CROSSES_PER_IX,
+        maxCrosses,
+        slippage: swapSlippage
+      },
+      { lowerTick, knownPrice, slippage: positionSlippage, upperTick },
+      toDecimal(1, 3)
+    )
+    return simulateResult
+  } catch (e) {
+    console.log(e)
+    return null
+  }
 }

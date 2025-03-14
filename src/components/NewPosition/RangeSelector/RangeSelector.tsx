@@ -19,7 +19,6 @@ import useStyles from './style'
 import { PositionOpeningMethod } from '@store/consts/types'
 import { getMaxTick, getMinTick } from '@invariant-labs/sdk-sonic/lib/utils'
 import { TooltipGradient } from '@components/TooltipHover/TooltipGradient'
-
 export interface IRangeSelector {
   updatePath: (concIndex: number) => void
   initialConcentration: string
@@ -30,7 +29,7 @@ export interface IRangeSelector {
   onChangeRange: (leftIndex: number, rightIndex: number) => void
   blocked?: boolean
   blockerInfo?: string
-  ticksLoading: boolean
+  isLoadingTicksOrTickmap: boolean
   isXtoY: boolean
   xDecimal: number
   yDecimal: number
@@ -70,7 +69,7 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
   onChangeRange,
   blocked = false,
   blockerInfo,
-  ticksLoading,
+  isLoadingTicksOrTickmap,
   isXtoY,
   xDecimal,
   yDecimal,
@@ -278,7 +277,7 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
 
   useEffect(() => {
     if (
-      !ticksLoading &&
+      !isLoadingTicksOrTickmap &&
       isMountedRef.current &&
       poolIndex !== null &&
       currentMidPrice !== midPrice &&
@@ -299,7 +298,7 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
 
   useEffect(() => {
     if (
-      !ticksLoading &&
+      !isLoadingTicksOrTickmap &&
       isMountedRef.current &&
       poolIndex !== null &&
       currentMidPrice !== midPrice &&
@@ -311,7 +310,7 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
 
       unblockUpdatePriceRange()
     }
-  }, [ticksLoading, isMountedRef, midPrice.index, poolIndex])
+  }, [isLoadingTicksOrTickmap, isMountedRef, midPrice.index, poolIndex])
 
   const autoZoomHandler = (left: number, right: number, canZoomCloser: boolean = false) => {
     const { leftInRange, rightInRange } = getTicksInsideRange(left, right, isXtoY)
@@ -363,7 +362,11 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
   }
 
   useEffect(() => {
-    if (positionOpeningMethod === 'concentration' && isMountedRef.current && !ticksLoading) {
+    if (
+      positionOpeningMethod === 'concentration' &&
+      isMountedRef.current &&
+      !isLoadingTicksOrTickmap
+    ) {
       const { leftRange, rightRange } = calculateConcentrationRange(
         tickSpacing,
         concentrationArray[concentrationIndex],
@@ -380,7 +383,11 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
   }, [positionOpeningMethod])
 
   useEffect(() => {
-    if (positionOpeningMethod === 'concentration' && !ticksLoading && isMountedRef.current) {
+    if (
+      positionOpeningMethod === 'concentration' &&
+      !isLoadingTicksOrTickmap &&
+      isMountedRef.current
+    ) {
       const index =
         concentrationIndex > concentrationArray.length - 1
           ? concentrationArray.length - 1
@@ -487,7 +494,7 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
           plotMax={plotMax}
           zoomMinus={zoomMinus}
           zoomPlus={zoomPlus}
-          loading={ticksLoading}
+          loading={isLoadingTicksOrTickmap}
           isXtoY={isXtoY}
           tickSpacing={tickSpacing}
           xDecimal={xDecimal}
@@ -496,6 +503,20 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
           hasError={hasTicksError}
           reloadHandler={reloadHandler}
         />
+        {/* <FormControlLabel
+          control={
+            <Checkbox
+              checked={onlyUserPositions}
+              onChange={() => {
+                setOnlyUserPositions(!onlyUserPositions)
+              }}
+              name='onlyUserPositions'
+              color='secondary'
+            />
+          }
+          label='Show only your positions'
+          classes={{ label: classes.checkboxLabel }}
+        /> */}
       </Grid>
       <Grid container className={classes.innerWrapper}>
         <Grid container justifyContent='space-between' alignItems='center' minHeight={36}>
