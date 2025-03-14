@@ -184,17 +184,21 @@ function* handleInitPositionAndPoolWithSOL(action: PayloadAction<InitPositionDat
 
     yield put(snackbarsActions.add({ ...SIGNING_SNACKBAR_CONFIG, key: loaderSigningTx }))
 
-    const [signedCombinedTransactionTx, createPoolSignedTx] = (yield* call(
-      [wallet, wallet.signAllTransactions],
-      // [initialTx, initPositionTx, unwrapTx, initPoolTx]
-      [combinedTransaction, createPoolTx]
-    )) as Transaction[]
+    // const [signedCombinedTransactionTx, createPoolSignedTx] = (yield* call(
+    //   [wallet, wallet.signAllTransactions],
+    //   // [initialTx, initPositionTx, unwrapTx, initPoolTx]
+    //   [combinedTransaction, createPoolTx]
+    // )) as Transaction[]
 
     closeSnackbar(loaderSigningTx)
     yield put(snackbarsActions.remove(loaderSigningTx))
 
     // initialSignedTx.partialSign(wrappedSolAccount)
-    ;(signedCombinedTransactionTx as Transaction).partialSign(wrappedSolAccount)
+    // ;(signedCombinedTransactionTx as Transaction).partialSign(wrappedSolAccount)
+    const createPoolSignedTx = (yield* call(
+      [wallet, wallet.signTransaction],
+      createPoolTx
+    )) as Transaction
 
     if (createPoolSigners.length) {
       ;(createPoolSignedTx as Transaction).partialSign(...createPoolSigners)
@@ -225,6 +229,13 @@ function* handleInitPositionAndPoolWithSOL(action: PayloadAction<InitPositionDat
     yield* call(sendAndConfirmRawTransaction, connection, createPoolSignedTx.serialize(), {
       skipPreflight: false
     })
+    const signedCombinedTransactionTx = (yield* call(
+      [wallet, wallet.signTransaction],
+      combinedTransaction
+    )) as Transaction
+
+    // initialSignedTx.partialSign(wrappedSolAccount)
+    ;(signedCombinedTransactionTx as Transaction).partialSign(wrappedSolAccount)
 
     const createPositionTxid = yield* call(
       sendAndConfirmRawTransaction,
