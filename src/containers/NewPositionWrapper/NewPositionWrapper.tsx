@@ -68,7 +68,7 @@ export const NewPositionWrapper: React.FC<IProps> = ({
 }) => {
   const dispatch = useDispatch()
   const connection = getCurrentSolanaConnection()
-  const ethBalance = useSelector(balance)
+  const solBalance = useSelector(balance)
   const tokens = useSelector(poolTokens)
   const walletStatus = useSelector(status)
   const allPools = useSelector(poolsArraySortedByFees)
@@ -889,7 +889,7 @@ export const NewPositionWrapper: React.FC<IProps> = ({
       setOnlyUserPositions={() => {}} //TODO implement logic
       network={currentNetwork}
       isLoadingTokens={isCurrentlyLoadingTokens}
-      ethBalance={ethBalance}
+      solBalance={solBalance}
       walletStatus={walletStatus}
       onConnectWallet={() => {
         dispatch(walletActions.connect(false))

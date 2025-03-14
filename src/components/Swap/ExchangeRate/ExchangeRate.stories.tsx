@@ -27,7 +27,7 @@ export const Primary: Story = {
     amount: 100,
     loading: false,
     onClick: fn(),
-    tokenFromSymbol: 'ETH',
+    tokenFromSymbol: 'SOL',
     tokenToDecimals: 14,
     tokenToSymbol: 'USDC'
   }

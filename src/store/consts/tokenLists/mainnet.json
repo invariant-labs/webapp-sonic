@@ -709,7 +709,7 @@
     "address": "3JSvb2ienUu6WVcUfhtLXGVGeuUca7S5UGyJrTZEAKcy",
     "chainId": 101,
     "decimals": 5,
-    "name": "USE ETH",
+    "name": "USE SOL",
     "symbol": "$USETH",
     "logoURI": "https://nftstorage.link/ipfs/bafkreiakrtklu3bksdqbawd6t5hp2embnzqdkfbtlkepaozvujertwfuwm",
     "tags": ["unknown"]
@@ -914,7 +914,7 @@
     "address": "EyrnrbE5ujd3HQG5PZd9MbECN9yaQrqc8pRwGtaLoyC",
     "chainId": 101,
     "decimals": 9,
-    "name": "Wrapped ETH (Allbridge from BSC)",
+    "name": "Wrapped SOL (Allbridge from BSC)",
     "symbol": "abETH",
     "logoURI": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/FeGn77dhg1KXRRFeSwwMiykZnZPw5JXW6naf2aQgZDQf/logo.png",
     "tags": ["old-registry"]
@@ -1063,7 +1063,7 @@
     "address": "AaAEw2VCw1XzgvKB8Rj2DyK2ZVau9fbt2bE8hZFWsMyE",
     "chainId": 101,
     "decimals": 9,
-    "name": "Wrapped ETH (Allbridge from Ethereum)",
+    "name": "Wrapped SOL (Allbridge from Ethereum)",
     "symbol": "aeWSOL",
     "logoURI": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/FeGn77dhg1KXRRFeSwwMiykZnZPw5JXW6naf2aQgZDQf/logo.png",
     "tags": ["old-registry"]
@@ -3199,7 +3199,7 @@
     "address": "BhwHzku9f7fQY4QrH77wTXgXsu3xctuBA1b7kZxD5U5u",
     "chainId": 101,
     "decimals": 9,
-    "name": "Droid-Fi ETH Quarterly",
+    "name": "Droid-Fi SOL Quarterly",
     "symbol": "DETHQ",
     "logoURI": "https://arweave.net/KXxOOMCJZ6zPK8rdMm5ncpqsQ31ZSJ2Au79EoUjv9RA",
     "tags": ["unknown"]
@@ -3810,7 +3810,7 @@
     "chainId": 101,
     "decimals": 8,
     "name": "Ether (Portal)",
-    "symbol": "ETH",
+    "symbol": "SOL",
     "logoURI": "https://raw.githubusercontent.com/wormhole-foundation/wormhole-token-list/main/assets/ETH_wh.png",
     "tags": ["wormhole", "old-registry"],
     "extensions": { "coingeckoId": "ethereum-wormhole" }
@@ -3819,7 +3819,7 @@
     "address": "4EqmCRdEqcv8YPvQ77NuhuFQufHaBFM6XHGxPuachgLW",
     "chainId": 101,
     "decimals": 6,
-    "name": "ETH ON SOL",
+    "name": "SOL ON SOL",
     "symbol": "ETHEREUM",
     "logoURI": "https://bafkreihbdsnnylgzwfra7q5eteovyycvhwxpbk7vfbw3qqzlli2ifmskhm.ipfs.nftstorage.link",
     "tags": ["unknown"]
@@ -10952,7 +10952,7 @@
     "address": "BrNB3Rhy27if6FENKMyjyVXwowAEPLkh2iYFqoQw8Wn4",
     "chainId": 101,
     "decimals": 9,
-    "name": "Welcome ETH",
+    "name": "Welcome SOL",
     "symbol": "WSOL",
     "logoURI": "https://arweave.net/eynFz1Iwvg5uhTuwbxH67AX3eNkTnZUGYVtzw6sAihU",
     "tags": ["unknown"]
@@ -11204,7 +11204,7 @@
     "address": "ZScHuTtqZukUrtZS43teTKGs2VqkKL8k4QCouR2n6Uo",
     "chainId": 101,
     "decimals": 8,
-    "name": "Lido Wrapped Staked ETH",
+    "name": "Lido Wrapped Staked SOL",
     "symbol": "wstETH",
     "logoURI": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/ZScHuTtqZukUrtZS43teTKGs2VqkKL8k4QCouR2n6Uo/logo.png",
     "tags": ["old-registry", "solana-fm"]
@@ -11277,7 +11277,7 @@
     "address": "8bqjz8DeSuim1sEAsQatjJN4zseyxSPdhHQcuuhL8PCK",
     "chainId": 101,
     "decimals": 9,
-    "name": "Synthetic ETH",
+    "name": "Synthetic SOL",
     "symbol": "xETH",
     "logoURI": "https://www.synthetify.io/icons/xeth.svg",
     "tags": ["old-registry"]

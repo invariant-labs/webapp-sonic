@@ -60,7 +60,7 @@ export const FaucetButton: React.FC<IProps> = ({
         network === NetworkType.Mainnet ? WSOL_MIN_FAUCET_FEE_MAIN : WSOL_MIN_FAUCET_FEE_TEST
       )
     ) {
-      return "You don't have enough ETH to claim faucet"
+      return "You don't have enough SOL to claim faucet"
     }
 
     return ''

@@ -64,7 +64,7 @@ import { getSonicWallet } from '@utils/web3/wallet'
 import nacl from 'tweetnacl'
 import { BN } from '@coral-xyz/anchor'
 
-function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionData>): Generator {
+function* handleInitPositionAndPoolWithSOL(action: PayloadAction<InitPositionData>): Generator {
   const data = action.payload
 
   if (
@@ -96,11 +96,11 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
     const tokensAccounts = yield* select(accounts)
     const allTokens = yield* select(tokens)
 
-    const wrappedEthAccount = Keypair.generate()
+    const wrappedSolAccount = Keypair.generate()
     const net = networkTypetoProgramNetwork(networkType)
 
     const { createIx, initIx, transferIx, unwrapIx } = createNativeAtaWithTransferInstructions(
-      wrappedEthAccount.publicKey,
+      wrappedSolAccount.publicKey,
       wallet.publicKey,
       net,
       allTokens[data.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS
@@ -110,7 +110,7 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
 
     let userTokenX =
       allTokens[data.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[data.tokenX.toString()]
           ? tokensAccounts[data.tokenX.toString()].address
           : null
@@ -121,7 +121,7 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
 
     let userTokenY =
       allTokens[data.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[data.tokenY.toString()]
           ? tokensAccounts[data.tokenY.toString()].address
           : null
@@ -193,8 +193,8 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
     closeSnackbar(loaderSigningTx)
     yield put(snackbarsActions.remove(loaderSigningTx))
 
-    // initialSignedTx.partialSign(wrappedEthAccount)
-    ;(signedCombinedTransactionTx as Transaction).partialSign(wrappedEthAccount)
+    // initialSignedTx.partialSign(wrappedSolAccount)
+    ;(signedCombinedTransactionTx as Transaction).partialSign(wrappedSolAccount)
 
     if (createPoolSigners.length) {
       ;(createPoolSignedTx as Transaction).partialSign(...createPoolSigners)
@@ -214,7 +214,7 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
 
     //   return yield put(
     //     snackbarsActions.add({
-    //       message: 'ETH wrapping failed. Please try again.',
+    //       message: 'SOL wrapping failed. Please try again.',
     //       variant: 'error',
     //       persist: false,
     //       txid: initialTxid
@@ -244,7 +244,7 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
       return yield put(
         snackbarsActions.add({
           message:
-            // 'Position adding failed. Please unwrap wrapped ETH in your wallet and try again.',
+            // 'Position adding failed. Please unwrap wrapped SOL in your wallet and try again.',
             'Position adding failed. Please try again',
           variant: 'error',
           persist: false,
@@ -278,7 +278,7 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
     // if (!unwrapTxid.length) {
     //   yield put(
     //     snackbarsActions.add({
-    //       message: 'Wrapped ETH unwrap failed. Try to unwrap it in your wallet.',
+    //       message: 'Wrapped SOL unwrap failed. Try to unwrap it in your wallet.',
     //       variant: 'warning',
     //       persist: false,
     //       txid: unwrapTxid
@@ -287,7 +287,7 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
     // } else {
     //   yield put(
     //     snackbarsActions.add({
-    //       message: 'ETH unwrapped successfully.',
+    //       message: 'SOL unwrapped successfully.',
     //       variant: 'success',
     //       persist: false,
     //       txid: unwrapTxid
@@ -333,7 +333,7 @@ function* handleInitPositionAndPoolWithETH(action: PayloadAction<InitPositionDat
   }
 }
 
-function* handleInitPositionWithETH(action: PayloadAction<InitPositionData>): Generator {
+function* handleInitPositionWithSOL(action: PayloadAction<InitPositionData>): Generator {
   const data = action.payload
 
   if (
@@ -343,9 +343,9 @@ function* handleInitPositionWithETH(action: PayloadAction<InitPositionData>): Ge
     return yield* call(handleInitPosition, action)
   }
 
-  // To initialize both the pool and position, separate transactions are necessary, as a single transaction does not have enough space to accommodate all instructions for both pool and position creation with ETH.
+  // To initialize both the pool and position, separate transactions are necessary, as a single transaction does not have enough space to accommodate all instructions for both pool and position creation with SOL.
   if (data.initPool) {
-    return yield* call(handleInitPositionAndPoolWithETH, action)
+    return yield* call(handleInitPositionAndPoolWithSOL, action)
   }
 
   const loaderCreatePosition = createLoaderKey()
@@ -382,12 +382,12 @@ function* handleInitPositionWithETH(action: PayloadAction<InitPositionData>): Ge
     })
     const userPositionList = yield* select(positionsList)
 
-    const wrappedEthAccount = Keypair.generate()
+    const wrappedSolAccount = Keypair.generate()
 
     const net = networkTypetoProgramNetwork(networkType)
 
     const { createIx, initIx, transferIx, unwrapIx } = createNativeAtaWithTransferInstructions(
-      wrappedEthAccount.publicKey,
+      wrappedSolAccount.publicKey,
       wallet.publicKey,
       net,
       allTokens[data.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS
@@ -397,7 +397,7 @@ function* handleInitPositionWithETH(action: PayloadAction<InitPositionData>): Ge
 
     let userTokenX =
       allTokens[data.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[data.tokenX.toString()]
           ? tokensAccounts[data.tokenX.toString()].address
           : null
@@ -408,7 +408,7 @@ function* handleInitPositionWithETH(action: PayloadAction<InitPositionData>): Ge
 
     let userTokenY =
       allTokens[data.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[data.tokenY.toString()]
           ? tokensAccounts[data.tokenY.toString()].address
           : null
@@ -475,7 +475,7 @@ function* handleInitPositionWithETH(action: PayloadAction<InitPositionData>): Ge
 
     closeSnackbar(loaderSigningTx)
     yield put(snackbarsActions.remove(loaderSigningTx))
-    signedTx.partialSign(wrappedEthAccount)
+    signedTx.partialSign(wrappedSolAccount)
 
     if (poolSigners.length) {
       signedTx.partialSign(...poolSigners)
@@ -552,7 +552,7 @@ function* handleInitPositionWithETH(action: PayloadAction<InitPositionData>): Ge
   }
 }
 
-export function* handleSwapAndInitPositionWithETH(
+export function* handleSwapAndInitPositionWithSOL(
   action: PayloadAction<SwapAndCreatePosition>
 ): Generator {
   const loaderCreatePosition = createLoaderKey()
@@ -592,11 +592,11 @@ export function* handleSwapAndInitPositionWithETH(
     const tokensAccounts = yield* select(accounts)
     const userPositionList = yield* select(positionsList)
 
-    const wrappedEthAccount = Keypair.generate()
+    const wrappedSOLAccount = Keypair.generate()
     const net = networkTypetoProgramNetwork(networkType)
 
     const { createIx, initIx, transferIx, unwrapIx } = createNativeAtaWithTransferInstructions(
-      wrappedEthAccount.publicKey,
+      wrappedSOLAccount.publicKey,
       wallet.publicKey,
       net,
       allTokens[action.payload.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS
@@ -606,7 +606,7 @@ export function* handleSwapAndInitPositionWithETH(
 
     let userTokenX =
       allTokens[action.payload.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSOLAccount.publicKey
         : tokensAccounts[action.payload.tokenX.toString()]
           ? tokensAccounts[action.payload.tokenX.toString()].address
           : null
@@ -617,7 +617,7 @@ export function* handleSwapAndInitPositionWithETH(
 
     let userTokenY =
       allTokens[action.payload.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSOLAccount.publicKey
         : tokensAccounts[action.payload.tokenY.toString()]
           ? tokensAccounts[action.payload.tokenY.toString()].address
           : null
@@ -695,9 +695,9 @@ export function* handleSwapAndInitPositionWithETH(
     yield put(snackbarsActions.add({ ...SIGNING_SNACKBAR_CONFIG, key: loaderSigningTx }))
 
     const serializedMessage = tx.message.serialize()
-    const signatureUint8 = nacl.sign.detached(serializedMessage, wrappedEthAccount.secretKey)
+    const signatureUint8 = nacl.sign.detached(serializedMessage, wrappedSOLAccount.secretKey)
 
-    tx.addSignature(wrappedEthAccount.publicKey, signatureUint8)
+    tx.addSignature(wrappedSOLAccount.publicKey, signatureUint8)
     const signedTx = (yield* call([wallet, wallet.signTransaction], tx)) as VersionedTransaction
 
     closeSnackbar(loaderSigningTx)
@@ -782,7 +782,7 @@ export function* handleSwapAndInitPosition(
       (allTokens[action.payload.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS &&
         !action.payload.yAmount.eq(new BN(0)))
     ) {
-      return yield* call(handleSwapAndInitPositionWithETH, action)
+      return yield* call(handleSwapAndInitPositionWithSOL, action)
     }
 
     yield put(
@@ -977,7 +977,7 @@ export function* handleInitPosition(action: PayloadAction<InitPositionData>): Ge
       (allTokens[action.payload.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS &&
         action.payload.yAmount !== 0)
     ) {
-      return yield* call(handleInitPositionWithETH, action)
+      return yield* call(handleInitPositionWithSOL, action)
     }
 
     yield put(
@@ -1350,7 +1350,7 @@ export function* handleGetPositionsList() {
   }
 }
 
-export function* handleClaimFeeWithETH({ index, isLocked }: { index: number; isLocked: boolean }) {
+export function* handleClaimFeeWithSOL({ index, isLocked }: { index: number; isLocked: boolean }) {
   const loaderClaimFee = createLoaderKey()
   const loaderSigningTx = createLoaderKey()
 
@@ -1376,12 +1376,12 @@ export function* handleClaimFeeWithETH({ index, isLocked }: { index: number; isL
     const tokensAccounts = yield* select(accounts)
     const allTokens = yield* select(tokens)
 
-    const wrappedEthAccount = Keypair.generate()
+    const wrappedSolAccount = Keypair.generate()
 
     const net = networkTypetoProgramNetwork(networkType)
 
     const { createIx, initIx, unwrapIx } = createNativeAtaInstructions(
-      wrappedEthAccount.publicKey,
+      wrappedSolAccount.publicKey,
       wallet.publicKey,
       net
     )
@@ -1391,7 +1391,7 @@ export function* handleClaimFeeWithETH({ index, isLocked }: { index: number; isL
 
     let userTokenX =
       allTokens[poolForIndex.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[poolForIndex.tokenX.toString()]
           ? tokensAccounts[poolForIndex.tokenX.toString()].address
           : null
@@ -1402,7 +1402,7 @@ export function* handleClaimFeeWithETH({ index, isLocked }: { index: number; isL
 
     let userTokenY =
       allTokens[poolForIndex.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[poolForIndex.tokenY.toString()]
           ? tokensAccounts[poolForIndex.tokenY.toString()].address
           : null
@@ -1462,7 +1462,7 @@ export function* handleClaimFeeWithETH({ index, isLocked }: { index: number; isL
 
     closeSnackbar(loaderSigningTx)
     yield put(snackbarsActions.remove(loaderSigningTx))
-    ;(signedTx as Transaction).partialSign(wrappedEthAccount)
+    ;(signedTx as Transaction).partialSign(wrappedSolAccount)
 
     const txid = yield* call(sendAndConfirmRawTransaction, connection, signedTx.serialize(), {
       skipPreflight: false
@@ -1543,7 +1543,7 @@ export function* handleClaimFee(action: PayloadAction<{ index: number; isLocked:
       allTokens[poolForIndex.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS ||
       allTokens[poolForIndex.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS
     ) {
-      return yield* call(handleClaimFeeWithETH, action.payload)
+      return yield* call(handleClaimFeeWithSOL, action.payload)
     }
 
     yield put(
@@ -1844,7 +1844,7 @@ export function* handleClaimAllFees() {
   }
 }
 
-export function* handleClosePositionWithETH(data: ClosePositionData) {
+export function* handleClosePositionWithSOL(data: ClosePositionData) {
   const loaderClosePosition = createLoaderKey()
   const loaderSigningTx = createLoaderKey()
 
@@ -1869,12 +1869,12 @@ export function* handleClosePositionWithETH(data: ClosePositionData) {
     const allTokens = yield* select(tokens)
     const userPositionList = yield* select(positionsList)
 
-    const wrappedEthAccount = Keypair.generate()
+    const wrappedSolAccount = Keypair.generate()
 
     const net = networkTypetoProgramNetwork(networkType)
 
     const { createIx, initIx, unwrapIx } = createNativeAtaInstructions(
-      wrappedEthAccount.publicKey,
+      wrappedSolAccount.publicKey,
       wallet.publicKey,
       net
     )
@@ -1883,7 +1883,7 @@ export function* handleClosePositionWithETH(data: ClosePositionData) {
 
     let userTokenX =
       allTokens[poolForIndex.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[poolForIndex.tokenX.toString()]
           ? tokensAccounts[poolForIndex.tokenX.toString()].address
           : null
@@ -1894,7 +1894,7 @@ export function* handleClosePositionWithETH(data: ClosePositionData) {
 
     let userTokenY =
       allTokens[poolForIndex.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS
-        ? wrappedEthAccount.publicKey
+        ? wrappedSolAccount.publicKey
         : tokensAccounts[poolForIndex.tokenY.toString()]
           ? tokensAccounts[poolForIndex.tokenY.toString()].address
           : null
@@ -1936,7 +1936,7 @@ export function* handleClosePositionWithETH(data: ClosePositionData) {
 
     closeSnackbar(loaderSigningTx)
     yield put(snackbarsActions.remove(loaderSigningTx))
-    ;(signedTx as Transaction).partialSign(wrappedEthAccount)
+    ;(signedTx as Transaction).partialSign(wrappedSolAccount)
 
     const txid = yield* call(sendAndConfirmRawTransaction, connection, signedTx.serialize(), {
       skipPreflight: false
@@ -2018,7 +2018,7 @@ export function* handleClosePosition(action: PayloadAction<ClosePositionData>) {
       allTokens[poolForIndex.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS ||
       allTokens[poolForIndex.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS
     ) {
-      return yield* call(handleClosePositionWithETH, action.payload)
+      return yield* call(handleClosePositionWithSOL, action.payload)
     }
 
     yield put(

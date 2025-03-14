@@ -38,7 +38,7 @@ interface IProp {
   network: NetworkType
   isLocked: boolean
   onModalOpen: () => void
-  ethBalance: BN
+  solBalance: BN
 }
 
 const SinglePositionInfo: React.FC<IProp> = ({
@@ -58,7 +58,7 @@ const SinglePositionInfo: React.FC<IProp> = ({
   network,
   onModalOpen,
   isLocked,
-  ethBalance
+  solBalance
 }) => {
   const navigate = useNavigate()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -88,11 +88,11 @@ const SinglePositionInfo: React.FC<IProp> = ({
 
   const canClosePosition = useMemo(() => {
     if (network === NetworkType.Testnet) {
-      return ethBalance.gte(WSOL_CLOSE_POSITION_LAMPORTS_TEST)
+      return solBalance.gte(WSOL_CLOSE_POSITION_LAMPORTS_TEST)
     } else {
-      return ethBalance.gte(WSOL_CLOSE_POSITION_LAMPORTS_MAIN)
+      return solBalance.gte(WSOL_CLOSE_POSITION_LAMPORTS_MAIN)
     }
-  }, [ethBalance, network])
+  }, [solBalance, network])
 
   return (
     <>
@@ -215,7 +215,7 @@ const SinglePositionInfo: React.FC<IProp> = ({
                     ? tokenX.claimValue > 0 || tokenY.claimValue > 0
                       ? 'Unclaimed fees will be returned when closing the position'
                       : ''
-                    : 'Insufficient ETH to close position'
+                    : 'Insufficient SOL to close position'
               }>
               <Button
                 className={classes.closeButton}
@@ -229,7 +229,7 @@ const SinglePositionInfo: React.FC<IProp> = ({
                     blurContent()
                   }
                 }}>
-                {canClosePosition ? 'Close position' : 'Lacking ETH'}
+                {canClosePosition ? 'Close position' : 'Lacking SOL'}
               </Button>
             </TooltipHover>
             <Hidden mdUp>

@@ -104,9 +104,9 @@ export interface ISwap {
   isBalanceLoading: boolean
   copyTokenAddressHandler: (message: string, variant: VariantType) => void
   network: NetworkType
-  ethBalance: BN
+  solBalance: BN
   unwrapWSOL: () => void
-  wrappedETHAccountExist: boolean
+  wrappedSOLAccountExist: boolean
   isTimeoutError: boolean
   deleteTimeoutError: () => void
   canNavigate: boolean
@@ -141,9 +141,9 @@ export const Swap: React.FC<ISwap> = ({
   isBalanceLoading,
   copyTokenAddressHandler,
   network,
-  ethBalance,
+  solBalance,
   unwrapWSOL,
-  wrappedETHAccountExist,
+  wrappedSOLAccountExist,
   isTimeoutError,
   deleteTimeoutError,
   canNavigate
@@ -473,14 +473,14 @@ export const Swap: React.FC<ISwap> = ({
 
     if (
       tokens[tokenFromIndex].assetAddress.toString() === WRAPPED_SOL_ADDRESS
-        ? ethBalance.lt(
+        ? solBalance.lt(
             convertBalanceToBN(amountFrom, tokens[tokenFromIndex].decimals).add(
               WSOL_MIN_DEPOSIT_SWAP_FROM_AMOUNT
             )
           )
-        : ethBalance.lt(WSOL_MIN_DEPOSIT_SWAP_FROM_AMOUNT)
+        : solBalance.lt(WSOL_MIN_DEPOSIT_SWAP_FROM_AMOUNT)
     ) {
-      return `Insufficient Wrapped ETH`
+      return `Insufficient Wrapped SOL`
     }
 
     if (
@@ -514,7 +514,7 @@ export const Swap: React.FC<ISwap> = ({
       getStateMessage() === 'Connect a wallet' ||
       getStateMessage() === 'Insufficient liquidity' ||
       getStateMessage() === 'Not enough liquidity' ||
-      getStateMessage() === 'Insufficient Wrapped ETH'
+      getStateMessage() === 'Insufficient Wrapped SOL'
     )
   }
   const setSlippage = (slippage: string): void => {
@@ -593,7 +593,7 @@ export const Swap: React.FC<ISwap> = ({
 
   return (
     <Grid container className={classes.swapWrapper} alignItems='center'>
-      {wrappedETHAccountExist && (
+      {wrappedSOLAccountExist && (
         <Box className={classes.unwrapContainer}>
           You have wrapped SOL.{' '}
           <u className={classes.unwrapNowButton} onClick={unwrapWSOL}>
@@ -945,9 +945,9 @@ export const Swap: React.FC<ISwap> = ({
               className={classes.connectWalletButton}
               isSwap={true}
             />
-          ) : getStateMessage() === 'Insufficient Wrapped ETH' ? (
+          ) : getStateMessage() === 'Insufficient Wrapped SOL' ? (
             <TooltipHover
-              title='More ETH is required to cover the transaction fee. Obtain more ETH to complete this transaction.'
+              title='More SOL is required to cover the transaction fee. Obtain more SOL to complete this transaction.'
               top={-45}>
               <div>
                 <AnimatedButton

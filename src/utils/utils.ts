@@ -1584,7 +1584,7 @@ export const getMockedTokenPrice = (symbol: string, network: NetworkType): Token
   switch (symbol) {
     case 'BTC':
       return prices[symbol + sufix]
-    case 'ETH':
+    case 'SOL':
       return prices['W' + symbol + sufix]
     case 'USDC':
       return prices[symbol + sufix]

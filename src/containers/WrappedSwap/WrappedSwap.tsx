@@ -68,7 +68,7 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
   const [progress, setProgress] = useState<ProgressState>('none')
   const [tokenFrom, setTokenFrom] = useState<PublicKey | null>(null)
   const [tokenTo, setTokenTo] = useState<PublicKey | null>(null)
-  const ethBalance = useSelector(balance)
+  const solBalance = useSelector(balance)
   const isTimeoutError = useSelector(timeoutError)
   const isPathTokensLoading = useSelector(isLoadingPathTokens)
   const { state } = useLocation()
@@ -300,16 +300,16 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
 
   const allAccounts = useSelector(accounts)
 
-  const wrappedETHAccountExist = useMemo(() => {
-    let wrappedETHAccountExist = false
+  const wrappedSOLAccountExist = useMemo(() => {
+    let wrappedSOLAccountExist = false
 
     Object.entries(allAccounts).map(([address, token]) => {
       if (address === WRAPPED_SOL_ADDRESS && token.balance.gt(new BN(0))) {
-        wrappedETHAccountExist = true
+        wrappedSOLAccountExist = true
       }
     })
 
-    return wrappedETHAccountExist
+    return wrappedSOLAccountExist
   }, [allAccounts])
 
   const unwrapWSOL = () => {
@@ -392,10 +392,10 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
       initialSlippage={initialSlippage}
       isBalanceLoading={isBalanceLoading}
       copyTokenAddressHandler={copyTokenAddressHandler}
-      ethBalance={ethBalance}
+      solBalance={solBalance}
       network={networkType}
       unwrapWSOL={unwrapWSOL}
-      wrappedETHAccountExist={wrappedETHAccountExist}
+      wrappedSOLAccountExist={wrappedSOLAccountExist}
       isTimeoutError={isTimeoutError}
       deleteTimeoutError={() => {
         dispatch(connectionActions.setTimeoutError(false))

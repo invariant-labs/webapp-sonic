@@ -136,7 +136,7 @@ export interface INewPosition {
   setOnlyUserPositions: (val: boolean) => void
   network: NetworkType
   isLoadingTokens: boolean
-  ethBalance: BN
+  solBalance: BN
   actualPoolPrice: BN | null
   walletStatus: Status
   onConnectWallet: () => void
@@ -208,7 +208,7 @@ export const NewPosition: React.FC<INewPosition> = ({
   setOnlyUserPositions,
   network,
   isLoadingTokens,
-  ethBalance,
+  solBalance,
   walletStatus,
   onConnectWallet,
   onDisconnectWallet,
@@ -979,7 +979,7 @@ export const NewPosition: React.FC<INewPosition> = ({
           isGetLiquidityError={isGetLiquidityError}
           isLoadingTicksOrTickmap={isLoadingTicksOrTickmap}
           network={network}
-          ethBalance={ethBalance}
+          solBalance={solBalance}
           walletStatus={walletStatus}
           onConnectWallet={onConnectWallet}
           onDisconnectWallet={onDisconnectWallet}

@@ -85,7 +85,7 @@ export const BTC_TEST: Token = {
 
 export const ETH_TEST: Token = {
   tokenProgram: TOKEN_PROGRAM_ID,
-  symbol: 'ETH',
+  symbol: 'SOL',
   address: ETH_ADDRESS[NetworkType.Testnet],
   decimals: 9,
   name: 'Etherum',
@@ -261,7 +261,7 @@ export const getAddressTickerMap = (network: NetworkType): { [k: string]: string
       WSOL: WSOL_ADDRESS[network].toString(),
       BTC: BTC_ADDRESS[network].toString(),
       USDC: USDC_ADDRESS[network].toString(),
-      ETH: ETH_ADDRESS[network].toString()
+      SOL: ETH_ADDRESS[network].toString()
     }
   } else {
     return {

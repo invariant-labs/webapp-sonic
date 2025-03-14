@@ -59,7 +59,7 @@ export const Primary: Story = {
     isLoadingTicksOrTickmap: false,
     tickSpacing: 1,
     tokenASymbol: 'SOL',
-    tokenBSymbol: 'ETH',
+    tokenBSymbol: 'SOL',
     xDecimal: 9,
     yDecimal: 12,
     setShouldReversePlot: fn(),

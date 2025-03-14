@@ -13,7 +13,7 @@ export const {
   balance,
   accounts,
   status,
-  ethBalanceLoading,
+  solBalanceLoading,
   tokenBalanceLoading,
   thankYouModalShown
 } = keySelectors(store, [
@@ -21,13 +21,13 @@ export const {
   'balance',
   'accounts',
   'status',
-  'ethBalanceLoading',
+  'solBalanceLoading',
   'tokenBalanceLoading',
   'thankYouModalShown'
 ])
 
 export const balanceLoading = createSelector(
-  ethBalanceLoading,
+  solBalanceLoading,
   tokenBalanceLoading,
   (a, b) => a || b
 )
@@ -71,14 +71,14 @@ export const swapTokens = createSelector(
   accounts,
   tokens,
   balance,
-  (allAccounts, tokens, ethBalance) => {
+  (allAccounts, tokens, solBalance) => {
     return Object.values(tokens).map(token => ({
       ...token,
       assetAddress: token.address,
       balance:
         token.address.toString() === WRAPPED_SOL_ADDRESS
-          ? ethBalance
-          : (allAccounts[token.address.toString()]?.balance ?? new BN(0))
+          ? solBalance
+          : allAccounts[token.address.toString()]?.balance ?? new BN(0)
     }))
   }
 )
@@ -87,14 +87,14 @@ export const poolTokens = createSelector(
   accounts,
   tokens,
   balance,
-  (allAccounts, tokens, ethBalance) => {
+  (allAccounts, tokens, solBalance) => {
     return Object.values(tokens).map(token => ({
       ...token,
       assetAddress: token.address,
       balance:
         token.address.toString() === WRAPPED_SOL_ADDRESS
-          ? ethBalance
-          : (allAccounts[token.address.toString()]?.balance ?? new BN(0))
+          ? solBalance
+          : allAccounts[token.address.toString()]?.balance ?? new BN(0)
     }))
   }
 )
@@ -103,7 +103,7 @@ export const swapTokensDict = createSelector(
   accounts,
   tokens,
   balance,
-  (allAccounts, tokens, ethBalance) => {
+  (allAccounts, tokens, solBalance) => {
     const swapTokens: Record<string, SwapToken> = {}
 
     Object.entries(tokens).forEach(([key, val]) => {
@@ -112,8 +112,8 @@ export const swapTokensDict = createSelector(
         assetAddress: val.address,
         balance:
           val.address.toString() === WRAPPED_SOL_ADDRESS
-            ? ethBalance
-            : (allAccounts[val.address.toString()]?.balance ?? new BN(0))
+            ? solBalance
+            : allAccounts[val.address.toString()]?.balance ?? new BN(0)
       }
     })
 
@@ -133,7 +133,7 @@ export const solanaWalletSelectors = {
   accounts,
   status,
   tokenAccount,
-  ethBalanceLoading,
+  solBalanceLoading,
   tokenBalanceLoading,
   thankYouModalShown
 }

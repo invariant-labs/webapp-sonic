@@ -19,7 +19,7 @@ interface TokenInfoInputsProps {
   buttonText: string
   success: boolean
   inProgress: boolean
-  ethBalance: BN
+  solBalance: BN
   currentNetwork: NetworkType
   onConnectWallet: () => void
 }
@@ -29,7 +29,7 @@ export const TokenInfoInputs: React.FC<TokenInfoInputsProps> = ({
   buttonText,
   success,
   inProgress,
-  ethBalance,
+  solBalance,
   currentNetwork,
   onConnectWallet
 }) => {
@@ -65,8 +65,8 @@ export const TokenInfoInputs: React.FC<TokenInfoInputsProps> = ({
   }, [success, inProgress])
 
   const createAvailable = useMemo(() => {
-    return ethBalance.gt(getCreateTokenLamports(currentNetwork))
-  }, [ethBalance])
+    return solBalance.gt(getCreateTokenLamports(currentNetwork))
+  }, [solBalance])
 
   return (
     <Box className={classes.container}>
@@ -132,19 +132,19 @@ export const TokenInfoInputs: React.FC<TokenInfoInputsProps> = ({
       <Box className={classes.tokenCost}>
         <InfoIcon />
         <Typography>
-          Token cost: ~{trimZeros(printBN(getCreateTokenLamports(currentNetwork), 9))} ETH
+          Token cost: ~{trimZeros(printBN(getCreateTokenLamports(currentNetwork), 9))} SOL
         </Typography>
       </Box>
 
       {isSubmitButton ? (
         !createAvailable ? (
           <TooltipHover
-            title='More ETH is required to cover the transaction fee. Obtain more ETH to complete this transaction.'
+            title='More SOL is required to cover the transaction fee. Obtain more SOL to complete this transaction.'
             top={-45}>
             <div>
               <AnimatedButton
                 type='submit'
-                content={'Insufficient ETH'}
+                content={'Insufficient SOL'}
                 className={classes.button}
                 onClick={() => {}}
                 disabled={!createAvailable}
