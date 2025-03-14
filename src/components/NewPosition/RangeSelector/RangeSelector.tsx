@@ -503,20 +503,6 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
           hasError={hasTicksError}
           reloadHandler={reloadHandler}
         />
-        {/* <FormControlLabel
-          control={
-            <Checkbox
-              checked={onlyUserPositions}
-              onChange={() => {
-                setOnlyUserPositions(!onlyUserPositions)
-              }}
-              name='onlyUserPositions'
-              color='secondary'
-            />
-          }
-          label='Show only your positions'
-          classes={{ label: classes.checkboxLabel }}
-        /> */}
       </Grid>
       <Grid container className={classes.innerWrapper}>
         <Grid container justifyContent='space-between' alignItems='center' minHeight={36}>
