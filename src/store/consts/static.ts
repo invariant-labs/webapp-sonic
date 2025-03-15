@@ -346,7 +346,7 @@ export const walletNames = {
   [WalletType.NIGHTLY_WALLET]: 'Nightly',
   [WalletType.NIGHTLY]: 'Wallet Selector',
   [WalletType.BACKPACK]: 'Backpack',
-  [WalletType.OKX]: 'Okx'
+  [WalletType.OKX]: 'OKX'
 }
 
 export const defaultImages: string[] = [Dog1, Dog2, Cat1, Cat2]
@@ -405,5 +405,4 @@ export const autoSwapPools: {
       feeIndex: 3
     }
   }
-
 ]
