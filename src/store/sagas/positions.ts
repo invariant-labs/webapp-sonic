@@ -201,9 +201,13 @@ function* handleInitPositionAndPoolWithSOL(action: PayloadAction<InitPositionDat
     )) as Transaction
 
     if (createPoolSigners.length) {
-      ;(createPoolSignedTx as Transaction).partialSign(...createPoolSigners)
+      for (const signer of createPoolSigners) {
+        createPoolSignedTx.partialSign(signer)
+      }
     }
 
+    closeSnackbar(loaderSigningTx)
+    yield put(snackbarsActions.remove(loaderSigningTx))
     // const initialTxid = yield* call(
     //   sendAndConfirmRawTransaction,
     //   connection,
@@ -489,7 +493,9 @@ function* handleInitPositionWithSOL(action: PayloadAction<InitPositionData>): Ge
     signedTx.partialSign(wrappedSolAccount)
 
     if (poolSigners.length) {
-      signedTx.partialSign(...poolSigners)
+      for (const signer of poolSigners) {
+        signedTx.partialSign(signer)
+      }
     }
 
     const txId = yield* call(sendAndConfirmRawTransaction, connection, signedTx.serialize(), {

@@ -283,9 +283,12 @@ export const NewPosition: React.FC<INewPosition> = ({
             item.pair.tokenY.equals(tokens[tokenBIndex].assetAddress)) ||
           (item.pair.tokenX.equals(tokens[tokenBIndex].assetAddress) &&
             item.pair.tokenY.equals(tokens[tokenAIndex].assetAddress))
-      ),
-    [tokenAIndex, tokenBIndex]
+      ) &&
+      (isCurrentPoolExisting || isWaitingForNewPool) &&
+      isLoadingTicksOrTickmap,
+    [tokenAIndex, tokenBIndex, isCurrentPoolExisting, isWaitingForNewPool]
   )
+
   const isAutoswapOn = useMemo(
     () =>
       isAutoSwapAvailable && (tokenACheckbox || tokenBCheckbox) && alignment == DepositOptions.Auto,
@@ -296,6 +299,8 @@ export const NewPosition: React.FC<INewPosition> = ({
     if (isAutoSwapAvailable) {
       setAlignment(DepositOptions.Auto)
     } else if (!isAutoSwapAvailable && alignment === DepositOptions.Auto) {
+      setAlignment(DepositOptions.Basic)
+    } else {
       setAlignment(DepositOptions.Basic)
     }
   }, [isAutoSwapAvailable])
