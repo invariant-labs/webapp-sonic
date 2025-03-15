@@ -394,4 +394,16 @@ export const autoSwapPools: {
     address: PublicKey
     feeIndex: number
   }
-}[] = []
+}[] = [
+  {
+    pair: {
+      tokenX: new PublicKey('6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL'),
+      tokenY: new PublicKey('So11111111111111111111111111111111111111112')
+    },
+    swapPool: {
+      address: new PublicKey('HjujFgVe4Yr7z8ge7JhokoQvuuu7e668k5d95zFsaG1S'),
+      feeIndex: 3
+    }
+  }
+
+]
