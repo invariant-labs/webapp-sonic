@@ -44,13 +44,11 @@ const CustomSnackbar = React.forwardRef<HTMLDivElement, CustomContentProps>(
     const networkUrl = useMemo(() => {
       switch (network) {
         case NetworkType.Mainnet:
-          return ''
+          return '?cluster=mainnet-alpha'
         case NetworkType.Testnet:
-          return '?cluster=testnet'
-        case NetworkType.Devnet:
-          return '?cluster=devnet'
+          return '?cluster=testnet.v1'
         default:
-          return '?cluster=testnet'
+          return '?cluster=testnet.v1'
       }
     }, [network])
 

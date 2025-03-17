@@ -1,4 +1,4 @@
-import { FEE_TIERS } from '@invariant-labs/sdk-sonic/lib/utils'
+import { FEE_TIERS, toDecimal } from '@invariant-labs/sdk-sonic/lib/utils'
 import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 import { ISnackbar } from '@store/reducers/snackbars'
@@ -8,6 +8,11 @@ import Dog1 from '@static/svg/SolanaCreator/Dog1.svg'
 import Dog2 from '@static/svg/SolanaCreator/Dog2.svg'
 import Cat1 from '@static/svg/SolanaCreator/Cat1.svg'
 import Cat2 from '@static/svg/SolanaCreator/Cat2.svg'
+
+export enum DepositOptions {
+  Basic = 'Basic',
+  Auto = 'Auto'
+}
 
 export enum NetworkType {
   Local = 'Local',
@@ -46,7 +51,7 @@ export const ETH_ADDRESS = {
 }
 
 export const USDC_ADDRESS = {
-  [NetworkType.Mainnet]: emptyPublicKey,
+  [NetworkType.Mainnet]: new PublicKey('HbDgpvHVxeNSRCGEUFvapCYmtYfqxexWcCbxtYecruy8'),
   [NetworkType.Testnet]: new PublicKey('6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL'),
   [NetworkType.Devnet]: emptyPublicKey,
   [NetworkType.Local]: emptyPublicKey
@@ -55,6 +60,80 @@ export const USDC_ADDRESS = {
 export const REFRESHER_INTERVAL = 30
 
 export const PRICE_DECIMAL = 24
+
+export const WSOL_MAIN: Token = {
+  tokenProgram: TOKEN_PROGRAM_ID,
+  symbol: 'SOL',
+  address: WSOL_ADDRESS[NetworkType.Mainnet],
+  decimals: 9,
+  name: 'Solana',
+  logoURI:
+    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+  coingeckoId: ''
+}
+
+export const USDC_MAIN: Token = {
+  tokenProgram: TOKEN_2022_PROGRAM_ID,
+  symbol: 'USDC',
+  address: new PublicKey('HbDgpvHVxeNSRCGEUFvapCYmtYfqxexWcCbxtYecruy8'),
+  decimals: 6,
+  name: 'USD Coin (Hyperlane)',
+  logoURI:
+    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png',
+  coingeckoId: 'usd-coin'
+}
+
+export const USDT_MAIN: Token = {
+  tokenProgram: TOKEN_2022_PROGRAM_ID,
+  symbol: 'USDT',
+  address: new PublicKey('qPzdrTCvxK3bxoh2YoTZtDcGVgRUwm37aQcC3abFgBy'),
+  decimals: 6,
+  name: 'Tether USD (Hyperlane)',
+  logoURI:
+    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg',
+  coingeckoId: 'tether'
+}
+
+export const SONIC_MAIN: Token = {
+  tokenProgram: TOKEN_2022_PROGRAM_ID,
+  symbol: 'SONIC',
+  address: new PublicKey('mrujEYaN1oyQXDHeYNxBYpxWKVkQ2XsGxfznpifu4aL'),
+  decimals: 6,
+  name: 'Sonic SVM (Hyperlane)',
+  logoURI: 'https://arweave.net/599UDQd5YAUfesAJCTNZ-4ELWLHX5pbid-ahpoJ-w1A',
+  coingeckoId: ''
+}
+
+export const SSOL_MAIN: Token = {
+  tokenProgram: TOKEN_2022_PROGRAM_ID,
+  symbol: 'sSOL',
+  address: new PublicKey('DYzxL1BWKytFiEnP7XKeRLvgheuQttHW643srPG6rNRn'),
+  decimals: 6,
+  name: 'Solayer SOL (Hyperlane)',
+  logoURI: 'https://raw.githubusercontent.com/solayer-labs/token-metadata/main/logo.jpg',
+  coingeckoId: ''
+}
+
+export const IRTSSOL_MAIN: Token = {
+  tokenProgram: TOKEN_2022_PROGRAM_ID,
+  symbol: 'lrtsSOL',
+  address: new PublicKey('7JPHd4DQMwMnFSrKJQZzqabcrWfuRvsuWsxwuGbbmFfR'),
+  decimals: 6,
+  name: 'adraLRT SOL (Solayer) (Hyperlane)',
+  logoURI: 'https://ipfs.io/ipfs/QmWGrew8pqdHpzw2pXaFgsbicZWcGyRXiGDTy6huDdC1gu',
+  coingeckoId: ''
+}
+
+export const SONICSOL_MAIN: Token = {
+  tokenProgram: TOKEN_2022_PROGRAM_ID,
+  symbol: 'sonicSOL',
+  address: new PublicKey('CCaj4n3kbuqsGvx4KxiXBfoQPtAgww6fwinHTAPqV5dS'),
+  decimals: 6,
+  name: 'Sonic Restaked SOL (Hyperlane)',
+  logoURI:
+    'https://raw.githubusercontent.com/hyperlane-xyz/hyperlane-registry/refs/heads/main/deployments/warp_routes/sonicSOL/logo.png',
+  coingeckoId: ''
+}
 
 export const USDC_TEST: Token = {
   tokenProgram: TOKEN_2022_PROGRAM_ID,
@@ -80,7 +159,7 @@ export const BTC_TEST: Token = {
 
 export const ETH_TEST: Token = {
   tokenProgram: TOKEN_PROGRAM_ID,
-  symbol: 'SOL',
+  symbol: 'ETH',
   address: ETH_ADDRESS[NetworkType.Testnet],
   decimals: 9,
   name: 'Etherum',
@@ -93,17 +172,6 @@ export const WSOL_TEST: Token = {
   tokenProgram: TOKEN_PROGRAM_ID,
   symbol: 'SOL',
   address: WSOL_ADDRESS[NetworkType.Testnet],
-  decimals: 9,
-  name: 'Solana',
-  logoURI:
-    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
-  coingeckoId: ''
-}
-
-export const WSOL_MAIN: Token = {
-  tokenProgram: TOKEN_PROGRAM_ID,
-  symbol: 'SOL',
-  address: WSOL_ADDRESS[NetworkType.Mainnet],
   decimals: 9,
   name: 'Solana',
   logoURI:
@@ -142,7 +210,7 @@ export const bestTiers: Record<NetworkType, BestTier[]> = {
 
 export const commonTokensForNetworks: Record<NetworkType, PublicKey[]> = {
   Devnet: [],
-  Mainnet: [],
+  Mainnet: [WSOL_MAIN.address, SONIC_MAIN.address, USDC_MAIN.address, USDT_MAIN.address],
   Testnet: [USDC_TEST.address, BTC_TEST.address, WSOL_TEST.address, ETH_TEST.address],
   Local: []
 }
@@ -165,9 +233,9 @@ export const airdropQuantities: Record<NetworkType, number[]> = {
   Devnet: [],
   Mainnet: [],
   Testnet: [
-    10000 * 10 ** USDC_TEST.decimals,
-    1 * 10 ** BTC_TEST.decimals,
-    2 * 10 ** ETH_TEST.decimals
+    100 * 10 ** USDC_TEST.decimals,
+    0.001 * 10 ** BTC_TEST.decimals,
+    0.1 * 10 ** ETH_TEST.decimals
   ],
   Local: []
 }
@@ -193,6 +261,11 @@ export const WSOL_CREATE_TOKEN_LAMPORTS_TEST = new BN(22000000)
 
 export const WSOL_CLOSE_POSITION_LAMPORTS_MAIN = new BN(2600000)
 export const WSOL_CLOSE_POSITION_LAMPORTS_TEST = new BN(2600000)
+
+export const WSOL_SWAP_AND_POSITION_INIT_LAMPORTS_MAIN = new BN(100000)
+export const WSOL_SWAP_AND_POSITION_INIT_LAMPORTS_TEST = new BN(100000)
+
+export const MINIMUM_PRICE_IMPACT = toDecimal(1, 4)
 
 export const getCreateTokenLamports = (network: NetworkType): BN => {
   switch (network) {
@@ -220,7 +293,14 @@ export const SIGNING_SNACKBAR_CONFIG: Omit<ISnackbar, 'open'> = {
   persist: true
 }
 
-export const ADDRESSES_TO_REVERT_TOKEN_PAIRS: string[] = [WSOL_MAIN.address.toString()]
+export const ADDRESSES_TO_REVERT_TOKEN_PAIRS: string[] = [
+  WSOL_MAIN.address.toString(),
+  USDT_MAIN.address.toString(),
+  USDC_MAIN.address.toString(),
+  IRTSSOL_MAIN.address.toString(),
+  SSOL_MAIN.address.toString(),
+  SONICSOL_MAIN.address.toString()
+]
 
 export const FormatConfig = {
   B: 1000000000,
@@ -251,7 +331,7 @@ export const getAddressTickerMap = (network: NetworkType): { [k: string]: string
       WSOL: WSOL_ADDRESS[network].toString(),
       BTC: BTC_ADDRESS[network].toString(),
       USDC: USDC_ADDRESS[network].toString(),
-      SOL: ETH_ADDRESS[network].toString()
+      ETH: ETH_ADDRESS[network].toString()
     }
   } else {
     return {
@@ -270,6 +350,10 @@ export const MINIMAL_POOL_INIT_PRICE = 0.00000001
 
 export const DEFAULT_SWAP_SLIPPAGE = '0.50'
 export const DEFAULT_NEW_POSITION_SLIPPAGE = '0.50'
+export const DEFAULT_AUTOSWAP_MAX_PRICE_IMPACT = '0.30'
+export const DEFAULT_AUTOSWAP_MIN_UTILIZATION = '95.00'
+export const DEFAULT_AUTOSWAP_MAX_SLIPPAGE_TOLERANCE_CREATE_POSITION = '2.50'
+export const DEFAULT_AUTOSWAP_MAX_SLIPPAGE_TOLERANCE_SWAP = '0.50'
 
 export const CHAINS = [
   { name: Chain.Solana, address: 'https://invariant.app/swap', iconGlow: 'solanaGlow' },
@@ -332,7 +416,7 @@ export const walletNames = {
   [WalletType.NIGHTLY_WALLET]: 'Nightly',
   [WalletType.NIGHTLY]: 'Wallet Selector',
   [WalletType.BACKPACK]: 'Backpack',
-  [WalletType.OKX]: 'Okx'
+  [WalletType.OKX]: 'OKX'
 }
 
 export const defaultImages: string[] = [Dog1, Dog2, Cat1, Cat2]
@@ -358,7 +442,7 @@ export const getPopularPools = (
         {
           tokenX: '6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL',
           tokenY: 'So11111111111111111111111111111111111111112',
-          fee: '0.09'
+          fee: '0.05'
         },
         {
           tokenX: '6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL',
@@ -370,3 +454,25 @@ export const getPopularPools = (
       return []
   }
 }
+
+export const autoSwapPools: {
+  pair: {
+    tokenX: PublicKey
+    tokenY: PublicKey
+  }
+  swapPool: {
+    address: PublicKey
+    feeIndex: number
+  }
+}[] = [
+  {
+    pair: {
+      tokenX: new PublicKey('62rMuAVWh2mQYE9wP4cPhaLDsbn8SzQNbHyJqUM6oQCB'),
+      tokenY: new PublicKey('6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL')
+    },
+    swapPool: {
+      address: new PublicKey('H4QcXPqL88TUhgD2U5CgJRQEn1qMcBbxRkdczTPxP71f'),
+      feeIndex: 3
+    }
+  }
+]

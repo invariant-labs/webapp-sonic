@@ -34,7 +34,10 @@ import {
   getMaxTick,
   getMinTick,
   PRICE_SCALE,
-  Range
+  Range,
+  simulateSwapAndCreatePosition,
+  simulateSwapAndCreatePositionOnTheSamePool,
+  toDecimal
 } from '@invariant-labs/sdk-sonic/lib/utils'
 import { PlotTickData, PositionWithAddress } from '@store/reducers/positions'
 import {
@@ -55,7 +58,13 @@ import {
   MAX_CROSSES_IN_SINGLE_TX,
   WSOL_MAIN,
   POSITIONS_PER_PAGE,
-  ETH_TEST
+  ETH_TEST,
+  USDC_MAIN,
+  USDT_MAIN,
+  SSOL_MAIN,
+  IRTSSOL_MAIN,
+  SONICSOL_MAIN,
+  SONIC_MAIN
 } from '@store/consts/static'
 import { PoolWithAddress } from '@store/reducers/pools'
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes'
@@ -865,10 +874,14 @@ export const getNetworkTokensList = (networkType: NetworkType): Record<string, T
   switch (networkType) {
     case NetworkType.Mainnet:
       return {
-        [WSOL_MAIN.address.toString()]: WSOL_MAIN
+        [WSOL_MAIN.address.toString()]: WSOL_MAIN,
+        [USDC_MAIN.address.toString()]: USDC_MAIN,
+        [USDT_MAIN.address.toString()]: USDT_MAIN,
+        [SSOL_MAIN.address.toString()]: SSOL_MAIN,
+        [IRTSSOL_MAIN.address.toString()]: IRTSSOL_MAIN,
+        [SONICSOL_MAIN.address.toString()]: SONICSOL_MAIN,
+        [SONIC_MAIN.address.toString()]: SONIC_MAIN
       }
-    case NetworkType.Devnet:
-      return {}
     case NetworkType.Testnet:
       return {
         [USDC_TEST.address.toString()]: USDC_TEST,
@@ -1915,4 +1928,89 @@ export const ROUTES = {
   },
 
   getPositionRoute: (id: string): string => `${ROUTES.POSITION}/${id}`
+}
+
+export const simulateAutoSwapOnTheSamePool = async (
+  amountX: BN,
+  amountY: BN,
+  pool: PoolWithAddress,
+  poolTicks: Tick[],
+  tickmap: Tickmap,
+  swapSlippage: BN,
+  lowerTick: number,
+  upperTick: number
+) => {
+  const ticks: Map<number, Tick> = new Map<number, Tick>()
+  for (const tick of poolTicks) {
+    ticks.set(tick.index, tick)
+  }
+
+  const maxCrosses =
+    pool.tokenX.toString() === WRAPPED_SOL_ADDRESS || pool.tokenY.toString() === WRAPPED_SOL_ADDRESS
+      ? MAX_CROSSES_IN_SINGLE_TX
+      : TICK_CROSSES_PER_IX
+
+  try {
+    const simulateResult = simulateSwapAndCreatePositionOnTheSamePool(
+      amountX,
+      amountY,
+      swapSlippage,
+      {
+        ticks,
+        tickmap,
+        pool,
+        maxVirtualCrosses: TICK_VIRTUAL_CROSSES_PER_IX,
+        maxCrosses
+      },
+      { lowerTick, upperTick }
+    )
+    return simulateResult
+  } catch (e) {
+    console.log(e)
+    return null
+  }
+}
+
+export const simulateAutoSwap = async (
+  amountX: BN,
+  amountY: BN,
+  pool: PoolWithAddress,
+  poolTicks: Tick[],
+  tickmap: Tickmap,
+  swapSlippage: BN,
+  positionSlippage: BN,
+  lowerTick: number,
+  upperTick: number,
+  knownPrice: BN
+) => {
+  const ticks: Map<number, Tick> = new Map<number, Tick>()
+  for (const tick of poolTicks) {
+    ticks.set(tick.index, tick)
+  }
+
+  const maxCrosses =
+    pool.tokenX.toString() === WRAPPED_SOL_ADDRESS || pool.tokenY.toString() === WRAPPED_SOL_ADDRESS
+      ? MAX_CROSSES_IN_SINGLE_TX
+      : TICK_CROSSES_PER_IX
+
+  try {
+    const simulateResult = simulateSwapAndCreatePosition(
+      amountX,
+      amountY,
+      {
+        ticks,
+        tickmap,
+        pool,
+        maxVirtualCrosses: TICK_VIRTUAL_CROSSES_PER_IX,
+        maxCrosses,
+        slippage: swapSlippage
+      },
+      { lowerTick, knownPrice, slippage: positionSlippage, upperTick },
+      toDecimal(1, 3)
+    )
+    return simulateResult
+  } catch (e) {
+    console.log(e)
+    return null
+  }
 }

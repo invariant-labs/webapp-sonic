@@ -20,8 +20,8 @@
     "@coral-xyz/anchor": "^0.29.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@invariant-labs/locker-sonic-sdk": "^0.0.2",
-    "@invariant-labs/sdk-sonic": "^0.0.6",
+    "@invariant-labs/locker-sonic-sdk": "^0.0.3",
+    "@invariant-labs/sdk-sonic": "^0.0.11",
     "@irys/web-upload": "*",
     "@irys/web-upload-solana": "^0.1.7",
     "@metaplex-foundation/js": "^0.20.1",
@@ -60,6 +60,7 @@
     "remeda": "^1.61.0",
     "slick-carousel": "^1.8.1",
     "tss-react": "^4.9.6",
+    "tweetnacl": "^1.0.3",
     "typed-redux-saga": "^1.5.0",
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0"
