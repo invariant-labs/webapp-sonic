@@ -17,7 +17,6 @@ import icons from '@static/icons'
 import { NetworkType, WSOL_MAIN, WSOL_TEST } from '@store/consts/static'
 import { addressToTicker, formatNumberWithoutSuffix, ROUTES } from '@utils/utils'
 import { useStyles } from './styles'
-import { network } from '@store/selectors/solanaConnection'
 import { MobileCard } from './MobileCard'
 import { TooltipHover } from '@components/TooltipHover/TooltipHover'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
@@ -183,15 +182,13 @@ export const YourWallet: React.FC<YourWalletProps> = ({
   const networkUrl = useMemo(() => {
     switch (currentNetwork) {
       case NetworkType.Mainnet:
-        return ''
+        return 'cluster=mainnet-alpha'
       case NetworkType.Testnet:
-        return '?cluster=testnet'
-      case NetworkType.Devnet:
-        return '?cluster=devnet'
+        return '?cluster=testnet.v1'
       default:
-        return ''
+        return '?cluster=testnet.v1'
     }
-  }, [network])
+  }, [currentNetwork])
 
   const renderMobileLoading = () => (
     <Box className={classes.mobileContainer} sx={{ marginTop: '16px' }}>
