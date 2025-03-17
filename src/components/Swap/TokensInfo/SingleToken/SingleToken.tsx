@@ -32,7 +32,7 @@ const SingleToken: React.FC<IProps> = ({ token, network, tokenPrice, copyTokenAd
   const networkUrl = useMemo(() => {
     switch (network) {
       case NetworkType.Mainnet:
-        return 'cluster=mainnet-alpha'
+        return '?cluster=mainnet-alpha'
       case NetworkType.Testnet:
         return '?cluster=testnet.v1'
       default:
