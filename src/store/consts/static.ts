@@ -170,9 +170,9 @@ export const airdropQuantities: Record<NetworkType, number[]> = {
   Devnet: [],
   Mainnet: [],
   Testnet: [
-    3000 * 10 ** USDC_TEST.decimals,
-    0.1 * 10 ** BTC_TEST.decimals,
-    2 * 10 ** ETH_TEST.decimals
+    100 * 10 ** USDC_TEST.decimals,
+    0.001 * 10 ** BTC_TEST.decimals,
+    0.1 * 10 ** ETH_TEST.decimals
   ],
   Local: []
 }
