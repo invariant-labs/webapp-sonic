@@ -58,7 +58,13 @@ import {
   MAX_CROSSES_IN_SINGLE_TX,
   WSOL_MAIN,
   POSITIONS_PER_PAGE,
-  ETH_TEST
+  ETH_TEST,
+  USDC_MAIN,
+  USDT_MAIN,
+  SSOL_MAIN,
+  IRTSSOL_MAIN,
+  SONICSOL_MAIN,
+  SONIC_MAIN
 } from '@store/consts/static'
 import { PoolWithAddress } from '@store/reducers/pools'
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes'
@@ -868,10 +874,14 @@ export const getNetworkTokensList = (networkType: NetworkType): Record<string, T
   switch (networkType) {
     case NetworkType.Mainnet:
       return {
-        [WSOL_MAIN.address.toString()]: WSOL_MAIN
+        [WSOL_MAIN.address.toString()]: WSOL_MAIN,
+        [USDC_MAIN.address.toString()]: USDC_MAIN,
+        [USDT_MAIN.address.toString()]: USDT_MAIN,
+        [SSOL_MAIN.address.toString()]: SSOL_MAIN,
+        [IRTSSOL_MAIN.address.toString()]: IRTSSOL_MAIN,
+        [SONICSOL_MAIN.address.toString()]: SONICSOL_MAIN,
+        [SONIC_MAIN.address.toString()]: SONIC_MAIN
       }
-    case NetworkType.Devnet:
-      return {}
     case NetworkType.Testnet:
       return {
         [USDC_TEST.address.toString()]: USDC_TEST,

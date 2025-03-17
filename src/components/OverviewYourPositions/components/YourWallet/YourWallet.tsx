@@ -14,7 +14,7 @@ import { StrategyConfig, TokenPool } from '@store/types/userOverview'
 import { useNavigate } from 'react-router-dom'
 import { DEFAULT_FEE_TIER, STRATEGIES } from '@store/consts/userStrategies'
 import icons from '@static/icons'
-import { NetworkType, WSOL_MAIN, WSOL_TEST } from '@store/consts/static'
+import { NetworkType, WSOL_MAIN } from '@store/consts/static'
 import { addressToTicker, formatNumberWithoutSuffix, ROUTES } from '@utils/utils'
 import { useStyles } from './styles'
 import { MobileCard } from './MobileCard'
@@ -207,14 +207,7 @@ export const YourWallet: React.FC<YourWalletProps> = ({
           className={classes.actionIcon}
           onClick={() => {
             const sourceToken = addressToTicker(currentNetwork, strategy.tokenAddressA)
-            const targetToken =
-              sourceToken === 'SOL'
-                ? currentNetwork === NetworkType.Mainnet
-                  ? WSOL_MAIN.address
-                  : WSOL_MAIN.address
-                : currentNetwork === NetworkType.Mainnet
-                  ? WSOL_MAIN.address
-                  : WSOL_TEST.address
+            const targetToken = WSOL_MAIN.address
 
             navigate(
               ROUTES.getNewPositionRoute(
@@ -235,14 +228,8 @@ export const YourWallet: React.FC<YourWalletProps> = ({
           className={classes.actionIcon}
           onClick={() => {
             const sourceToken = addressToTicker(currentNetwork, pool.id.toString())
-            const targetToken =
-              sourceToken === 'SOL'
-                ? currentNetwork === NetworkType.Mainnet
-                  ? WSOL_MAIN.address
-                  : WSOL_MAIN.address
-                : currentNetwork === NetworkType.Mainnet
-                  ? WSOL_MAIN.address
-                  : WSOL_TEST.address
+            const targetToken = WSOL_MAIN.address
+
             navigate(
               ROUTES.getExchangeRoute(
                 sourceToken,
