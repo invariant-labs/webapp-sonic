@@ -182,7 +182,7 @@ export const YourWallet: React.FC<YourWalletProps> = ({
   const networkUrl = useMemo(() => {
     switch (currentNetwork) {
       case NetworkType.Mainnet:
-        return 'cluster=mainnet-alpha'
+        return '?cluster=mainnet-alpha'
       case NetworkType.Testnet:
         return '?cluster=testnet.v1'
       default:

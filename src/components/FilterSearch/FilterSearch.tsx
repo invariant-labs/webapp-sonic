@@ -169,7 +169,7 @@ export const FilterSearch: React.FC<IFilterSearch> = memo(
     const networkUrl = useMemo(() => {
       switch (networkType) {
         case NetworkType.Mainnet:
-          return 'cluster=mainnet-alpha'
+          return '?cluster=mainnet-alpha'
         case NetworkType.Testnet:
           return '?cluster=testnet.v1'
         default:
