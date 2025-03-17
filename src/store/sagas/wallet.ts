@@ -199,14 +199,6 @@ export function* handleAirdrop(): Generator {
         airdropQuantities[networkType],
         airdropTokenPrograms[networkType]
       )
-
-      yield put(
-        snackbarsActions.add({
-          message: 'You will soon receive airdrop of tokens',
-          variant: 'success',
-          persist: false
-        })
-      )
     } else if (networkType === NetworkType.Mainnet) {
       if (solBalance.lt(WSOL_MIN_FAUCET_FEE_MAIN)) {
         yield put(
@@ -234,13 +226,6 @@ export function* handleAirdrop(): Generator {
         airdropTokenPrograms[networkType]
       )
 
-      yield put(
-        snackbarsActions.add({
-          message: 'You will soon receive airdrop of tokens',
-          variant: 'success',
-          persist: false
-        })
-      )
       yield* put(actions.showThankYouModal(true))
     } else {
       yield* call([connection, connection.requestAirdrop], wallet.publicKey, 1 * 1e9)
@@ -250,13 +235,6 @@ export function* handleAirdrop(): Generator {
         airdropTokens[networkType],
         airdropQuantities[networkType],
         airdropTokenPrograms[networkType]
-      )
-      yield put(
-        snackbarsActions.add({
-          message: 'You will soon receive airdrop',
-          variant: 'success',
-          persist: false
-        })
       )
     }
 
@@ -335,7 +313,8 @@ export function* transferAirdropSOL(): Generator {
 
 export function* getCollateralTokenAirdrop(
   collateralsAddresses: PublicKey[],
-  collateralsQuantities: number[]
+  collateralsQuantities: number[],
+  collateralProgramIds: PublicKey[]
 ): Generator {
   const wallet = yield* call(getWallet)
   const instructions: TransactionInstruction[] = []
@@ -349,7 +328,7 @@ export function* getCollateralTokenAirdrop(
         airdropAdmin.publicKey,
         collateralsQuantities[index],
         [],
-        TOKEN_PROGRAM_ID
+        collateralProgramIds[index]
       )
     )
   }
@@ -362,9 +341,37 @@ export function* getCollateralTokenAirdrop(
 
   const signedTx = (yield* call([wallet, wallet.signTransaction], tx)) as Transaction
 
-  yield* call([connection, connection.sendRawTransaction], signedTx.serialize(), {
-    skipPreflight: true
+  const signatureTx = yield* call(
+    [connection, connection.sendRawTransaction],
+    signedTx.serialize(),
+    {
+      skipPreflight: true
+    }
+  )
+
+  const confirmedTx = yield* call([connection, connection.confirmTransaction], {
+    blockhash: blockhash.blockhash,
+    lastValidBlockHeight: blockhash.lastValidBlockHeight,
+    signature: signatureTx
   })
+
+  if (confirmedTx.value.err === null) {
+    yield put(
+      snackbarsActions.add({
+        message: 'You will soon receive airdrop of tokens',
+        variant: 'success',
+        persist: false
+      })
+    )
+  } else {
+    yield put(
+      snackbarsActions.add({
+        message: 'There was an error in getting faucet, please try again',
+        variant: 'error',
+        persist: false
+      })
+    )
+  }
 }
 
 export function* signAndSend(wallet: WalletAdapter, tx: Transaction): SagaGenerator<string> {

@@ -281,7 +281,7 @@ export function* fetchNearestTicksForPair(action: PayloadAction<FetchTicksAndTic
     })
 
     const ticks = yield* call(getTicksFromAddresses, marketProgram, tickAddresses.flat())
-    console.log(ticks)
+
     let offset = 0
     for (let i = 0; i < tickAddresses.length; i++) {
       const ticksInPool = tickAddresses[i].length

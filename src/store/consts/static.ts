@@ -170,8 +170,8 @@ export const airdropQuantities: Record<NetworkType, number[]> = {
   Devnet: [],
   Mainnet: [],
   Testnet: [
-    10000 * 10 ** USDC_TEST.decimals,
-    1 * 10 ** BTC_TEST.decimals,
+    3000 * 10 ** USDC_TEST.decimals,
+    0.1 * 10 ** BTC_TEST.decimals,
     2 * 10 ** ETH_TEST.decimals
   ],
   Local: []
@@ -372,7 +372,7 @@ export const getPopularPools = (
         {
           tokenX: '6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL',
           tokenY: 'So11111111111111111111111111111111111111112',
-          fee: '0.09'
+          fee: '0.05'
         },
         {
           tokenX: '6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL',
@@ -397,11 +397,11 @@ export const autoSwapPools: {
 }[] = [
   {
     pair: {
-      tokenX: new PublicKey('6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL'),
-      tokenY: new PublicKey('So11111111111111111111111111111111111111112')
+      tokenX: new PublicKey('62rMuAVWh2mQYE9wP4cPhaLDsbn8SzQNbHyJqUM6oQCB'),
+      tokenY: new PublicKey('6B8zhSGkjZcQxHCE9RFwYMxT8ipifJ4JZLFTskLMcMeL')
     },
     swapPool: {
-      address: new PublicKey('HjujFgVe4Yr7z8ge7JhokoQvuuu7e668k5d95zFsaG1S'),
+      address: new PublicKey('H4QcXPqL88TUhgD2U5CgJRQEn1qMcBbxRkdczTPxP71f'),
       feeIndex: 3
     }
   }
