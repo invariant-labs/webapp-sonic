@@ -667,6 +667,14 @@ export function* handleSwapAndInitPositionWithSOL(
         ? true
         : undefined
 
+    const isInitialSolZero =
+      (allTokens[action.payload.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS &&
+        !action.payload.xAmount.eq(new BN(0))) ||
+      (allTokens[action.payload.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS &&
+        !action.payload.yAmount.eq(new BN(0)))
+
+    const prependedIxs = [createIx, initIx, ...(isInitialSolZero ? [] : [transferIx])]
+
     const tx = yield* call(
       [marketProgram, marketProgram.versionedSwapAndCreatePositionTx],
       {
@@ -705,7 +713,7 @@ export function* handleSwapAndInitPositionWithSOL(
           pool: action.payload.swapPool
         }
       },
-      [createIx, transferIx, initIx],
+      prependedIxs,
       [unwrapIx]
     )
 
@@ -794,10 +802,8 @@ export function* handleSwapAndInitPosition(
     const allTokens = yield* select(tokens)
 
     if (
-      (allTokens[action.payload.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS &&
-        !action.payload.xAmount.eq(new BN(0))) ||
-      (allTokens[action.payload.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS &&
-        !action.payload.yAmount.eq(new BN(0)))
+      allTokens[action.payload.tokenX.toString()].address.toString() === WRAPPED_SOL_ADDRESS ||
+      allTokens[action.payload.tokenY.toString()].address.toString() === WRAPPED_SOL_ADDRESS
     ) {
       return yield* call(handleSwapAndInitPositionWithSOL, action)
     }
