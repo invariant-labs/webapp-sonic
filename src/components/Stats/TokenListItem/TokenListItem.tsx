@@ -5,11 +5,11 @@ import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
 import { useStyles } from './style'
 import { Box, Grid, Typography, useMediaQuery } from '@mui/material'
 import { formatNumberWithSuffix } from '@utils/utils'
-import { NetworkType, SortTypeTokenList } from '@store/consts/static'
-import icons from '@static/icons'
-import { shortenAddress } from '@utils/uiUtils'
+import { Intervals, ITEMS_PER_PAGE, NetworkType, SortTypeTokenList } from '@store/consts/static'
+import { newTabBtnIcon, unknownTokenIcon, warningIcon } from '@static/icons'
+import { mapIntervalToString, shortenAddress } from '@utils/uiUtils'
 import { VariantType } from 'notistack'
-import { TooltipHover } from '@components/TooltipHover/TooltipHover'
+import { TooltipHover } from '@common/TooltipHover/TooltipHover'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
 
 interface IProps {
@@ -29,6 +29,7 @@ interface IProps {
   isUnknown?: boolean
   network?: NetworkType
   copyAddressHandler?: (message: string, variant: VariantType) => void
+  interval?: Intervals
 }
 
 const TokenListItem: React.FC<IProps> = ({
@@ -43,10 +44,10 @@ const TokenListItem: React.FC<IProps> = ({
   TVL = 0,
   sortType,
   onSort,
-  hideBottomLine = false,
   address,
   isUnknown,
   network,
+  interval = Intervals.Daily,
   copyAddressHandler
 }) => {
   const { classes } = useStyles()
@@ -78,32 +79,35 @@ const TokenListItem: React.FC<IProps> = ({
         copyAddressHandler('Failed to copy token address to Clipboard', 'error')
       })
   }
-  const shouldShowText = icon === icons.unknownToken || !isSm
-
+  const shouldShowText = !isSm
+  const intervalSuffix = mapIntervalToString(interval)
   return (
-    <Grid maxWidth='100%' className={classes.wrapper}>
+    <Grid className={classes.wrapper}>
       {displayType === 'tokens' ? (
         <Grid
           container
           classes={{ container: classes.container, root: classes.tokenList }}
-          style={hideBottomLine ? { border: 'none' } : undefined}>
+          sx={{
+            borderBottom:
+              itemNumber !== 0 && itemNumber % ITEMS_PER_PAGE
+                ? `1px solid ${colors.invariant.light}`
+                : `2px solid ${colors.invariant.light}`
+          }}>
           {!isXs && !isSm && <Typography component='p'>{itemNumber}</Typography>}
           <Grid className={classes.tokenName}>
-            <Box className={classes.imageContainer}>
-              <img
-                className={classes.tokenIcon}
-                src={icon}
-                alt='Token icon'
-                onError={e => {
-                  e.currentTarget.src = icons.unknownToken
-                }}
-              />
-              {isUnknown && <img className={classes.warningIcon} src={icons.warningIcon} />}
-            </Box>
+            <img
+              className={classes.tokenIcon}
+              src={icon}
+              alt='Token icon'
+              onError={e => {
+                e.currentTarget.src = unknownTokenIcon
+              }}
+            />
+            {isUnknown && <img className={classes.warningIcon} src={warningIcon} />}
             {shouldShowText && (
               <Typography>
-                {isXs ? shortenAddress(symbol) : name}
-                {!isXs && (
+                {isXs ? shortenAddress(symbol) : name.length < 25 ? name : name.slice(0, 40)}
+                {!isXs && name.length < 25 && (
                   <span className={classes.tokenSymbol}>{` (${shortenAddress(symbol)})`}</span>
                 )}
               </Typography>
@@ -116,7 +120,6 @@ const TokenListItem: React.FC<IProps> = ({
             </TooltipHover>
           </Grid>
           <Typography>{`~$${formatNumberWithSuffix(price)}`}</Typography>
-
           {/* {!hideName && (
             <Typography style={{ color: isNegative ? colors.invariant.Error : colors.green.main }}>
               {isNegative ? `${priceChange.toFixed(2)}%` : `+${priceChange.toFixed(2)}%`}
@@ -136,7 +139,7 @@ const TokenListItem: React.FC<IProps> = ({
                       'noopener,noreferrer'
                     )
                   }>
-                  <img width={32} height={32} src={icons.newTabBtn} alt={'Exchange'} />
+                  <img width={32} height={32} src={newTabBtnIcon} alt={'Exchange'} />
                 </button>
               </TooltipHover>
             </Box>
@@ -146,6 +149,12 @@ const TokenListItem: React.FC<IProps> = ({
         <Grid
           container
           style={{ color: colors.invariant.textGrey, fontWeight: 400 }}
+          sx={{
+            borderBottom:
+              itemNumber !== 0 && itemNumber % 10
+                ? `1px solid ${colors.invariant.light}`
+                : `px solid ${colors.invariant.light}`
+          }}
           classes={{ container: classes.container, root: classes.header }}>
           {!isXs && !isSm && (
             <Typography style={{ lineHeight: '12px' }}>
@@ -211,7 +220,7 @@ const TokenListItem: React.FC<IProps> = ({
                 onSort?.(SortTypeTokenList.VOLUME_DESC)
               }
             }}>
-            Volume 24H
+            Volume {intervalSuffix}
             {sortType === SortTypeTokenList.VOLUME_ASC ? (
               <ArrowDropUpIcon className={classes.icon} />
             ) : sortType === SortTypeTokenList.VOLUME_DESC ? (

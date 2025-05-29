@@ -1,12 +1,12 @@
 import { useStyles } from './style'
-import icons from '@static/icons'
-// import { Switch } from '@components/Switch/Switch'
+import { settings3Icon } from '@static/icons'
+// import { Switch } from '@common/Switch/Switch'
 import { SelectNetworkAndRPC } from './SelectNetworkAndRPC/SelectNetworkAndRPC'
 import { NetworkType } from '@store/consts/static'
 import { ISelectNetwork } from '@store/consts/types'
 import { Modal } from '../Modal/Modal'
 import { FaucetButton } from './FaucetButton/FaucetButton'
-import { Separator } from '@components/Separator/Separator'
+import { Separator } from '@common/Separator/Separator'
 import { useModal } from '../Modal/useModal'
 
 type Props = {
@@ -30,7 +30,7 @@ export const SettingsModal = ({
 
   return (
     <Modal
-      icon={<img className={classes.barButtonIcon} src={icons.settings3} alt='Settings icon' />}
+      icon={<img className={classes.barButtonIcon} src={settings3Icon} alt='Settings icon' />}
       title='Settings'
       showTitle
       open={open}

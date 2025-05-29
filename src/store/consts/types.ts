@@ -2,6 +2,8 @@ import { ActionCreatorWithPayload } from '@reduxjs/toolkit'
 import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 import { NetworkType } from './static'
+import { Position } from '@invariant-labs/sdk-sonic/lib/market'
+import { PoolWithAddressAndIndex } from '@store/selectors/positions'
 
 declare global {
   interface Window {
@@ -119,12 +121,6 @@ export interface PoolSnapshot {
   feeY: SnapshotValueData
 }
 
-export interface BestTier {
-  tokenX: PublicKey
-  tokenY: PublicKey
-  bestTierIndex: number
-}
-
 export interface ISelectChain {
   name: Chain
   address: string
@@ -132,11 +128,10 @@ export interface ISelectChain {
 
 export enum Chain {
   Solana = 'Solana',
-  Sonic = 'Sonic',
   AlephZero = 'Aleph Zero',
   Eclipse = 'Eclipse',
   Vara = 'Vara',
-  Alephium = 'Alephium'
+  Sonic = 'Sonic'
 }
 
 export interface SnapshotValueData {
@@ -247,4 +242,49 @@ export interface IPriceData {
 export interface EligibleAddresses {
   rewardKey: string
   addresses: string[]
+}
+
+export interface IPositionItem {
+  tokenXName: string
+  tokenYName: string
+  tokenXIcon: string
+  tokenYIcon: string
+  tokenXLiq: number
+  poolAddress: PublicKey
+  position: Position
+  tokenYLiq: number
+  fee: number
+  min: number
+  max: number
+  valueX: number
+  valueY: number
+  id: string
+  address: string
+  isActive?: boolean
+  currentPrice: number
+  network: NetworkType
+  isFullRange: boolean
+  isLocked: boolean
+  poolData: PoolWithAddressAndIndex
+  liquidity: BN
+  unclaimedFeesInUSD: { value: number; loading: boolean }
+}
+
+export interface ILiquidityToken {
+  name: string
+  icon: string
+  decimal: number
+  liqValue: number
+  claimValue: number
+  balance: number
+  usdValue?: number
+}
+
+export interface INavigatePosition {
+  tokenXName: string
+  tokenYName: string
+  tokenXIcon: string
+  tokenYIcon: string
+  fee: number
+  id: string
 }

@@ -1,7 +1,7 @@
 import NavbarButton from '@components/Navbar/NavbarButton'
 import DotIcon from '@mui/icons-material/FiberManualRecordRounded'
 import { CardMedia, Grid, useMediaQuery } from '@mui/material'
-import icons from '@static/icons'
+import { logoShortIcon, logoTitleIcon } from '@static/icons'
 import { theme } from '@static/theme'
 import { RPC, NetworkType } from '@store/consts/static'
 import { useEffect, useState } from 'react'
@@ -65,6 +65,7 @@ export const Header: React.FC<IHeader> = ({
     liquidity: [/^liquidity\/*/],
     exchange: [/^exchange\/*/],
     portfolio: [/^portfolio\/*/, /^newPosition\/*/, /^position\/*/],
+
     ...(typeOfNetwork === NetworkType.Testnet ? { creator: [/^creator\/*/] } : {})
   }
 
@@ -94,11 +95,11 @@ export const Header: React.FC<IHeader> = ({
 
   return (
     <Grid container>
-      <Grid container className={classes.root} direction='row' alignItems='center' wrap='nowrap'>
-        <Grid container item className={classes.leftSide} justifyContent='flex-start'>
+      <Grid container className={classes.root}>
+        <Grid container item className={classes.leftSide}>
           <CardMedia
             className={classes.logo}
-            image={icons.LogoTitle}
+            image={logoTitleIcon}
             onClick={() => {
               if (!activePath.startsWith('exchange')) {
                 navigate(ROUTES.EXCHANGE)
@@ -111,10 +112,9 @@ export const Header: React.FC<IHeader> = ({
           container
           item
           className={classes.routers}
-          wrap='nowrap'
           sx={{
             display: { lg: 'block' },
-            '@media (max-width: 1200px)': {
+            [theme.breakpoints.down(1200)]: {
               display: 'none'
             }
           }}>
@@ -139,10 +139,10 @@ export const Header: React.FC<IHeader> = ({
           ))}
         </Grid>
 
-        <Grid container item className={classes.buttons} wrap='nowrap'>
+        <Grid container item className={classes.buttons}>
           <CardMedia
             className={classes.logoShort}
-            image={icons.LogoShort}
+            image={logoShortIcon}
             onClick={() => {
               if (!activePath.startsWith('exchange')) {
                 navigate(ROUTES.EXCHANGE)

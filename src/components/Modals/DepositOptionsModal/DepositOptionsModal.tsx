@@ -13,7 +13,6 @@ import {
 } from '@mui/material'
 import DepositOption from './DepositOption'
 import { theme } from '@static/theme'
-import classNames from 'classnames'
 
 enum SettingsOptions {
   Basic = 'Basic',
@@ -22,25 +21,24 @@ enum SettingsOptions {
 
 const priceImpactTiers = [
   {
-    value: '0.1',
-    label: 'Low price impact',
-    message:
-      'Minimizes price impact but may reduce execution probability when there is not enough liquidity.'
-  },
-  {
     value: '0.3',
-    label: 'Default',
-    message: 'Balanced setting ensuring stable execution and fair pricing.'
+    label: 'Low price impact',
+    message: 'Best protection against unfavorable prices, but may fail with large positions'
   },
   {
     value: '0.5',
+    label: 'Default',
+    message: 'Most balanced between price protection and execution success'
+  },
+  {
+    value: '1',
     label: 'High Tolerance',
-    message: 'Increases execution likelihood but allows for greater price movement.'
+    message: 'Higher risk of unfavorable prices; used for fast or guaranteed execution'
   }
 ]
 const priceImpactSetting = {
   description:
-    'The higher the value, the greater the potential impact of your transaction on the price. A high price impact can result in a worse exchange rate, so it is recommended to choose default settings.',
+    'Maximum price impact sets the highest acceptable change in price caused by a swap that rebalances the token ratio before opening a position. A high price impact can result in less favorable exchange rates.',
   label: 'Maximum Price Impact',
   upperValueTreshHold: '50',
   lowerValueTreshHold: '0'
@@ -50,24 +48,22 @@ const utilizationTiers = [
   {
     value: '90',
     label: 'Volatile Market',
-    message: 'Allows swaps even if the pool retains only 90% of its initial liquidity.'
+    message: 'Supports volatile markets, allowing up to 10% capital unused'
   },
   {
     value: '95',
     label: 'Default',
-    message:
-      'Ensures the pool retains 95% liquidity after the swap, balancing execution probability and price stability.'
+    message: 'Aims to use 95% of capital post-swap, suitable for most pools and conditions.'
   },
   {
     value: '99',
     label: 'Maximize Capital',
-    message:
-      'Prioritizes minimal price impact but may lead to failed swaps if liquidity is insufficient.'
+    message: 'Tries to use full capital but may retry if price fluctuates'
   }
 ]
 const utilizationSetting = {
   description:
-    'The higher the value, the more liquidity must remain in the pool after auto swap. A high minimum utilization helps prevent excessive price impact and ensures stability for liquidity providers. The default setting balances execution and pool stability.',
+    'Minimal utilization sets the minimum amount of declared capital that must be used in a created position. It ensures that unused capital stays within acceptable limits. If market volatility causes low usage, the transaction automatically reverts.',
   label: 'Minimum Utilization',
   upperValueTreshHold: '100',
   lowerValueTreshHold: '0'
@@ -93,7 +89,7 @@ const slippageToleranceSwapTiers = [
 const slippageToleranceSwapSetting = {
   description:
     'Slippage tolerance is a pricing difference between the price at the confirmation time and the actual price of the transaction users are willing to accept when exchanging tokens.',
-  label: 'Slippage Tolerance Swap',
+  label: 'Swap Slippage Tolerance',
   upperValueTreshHold: '50',
   lowerValueTreshHold: '0'
 }
@@ -118,7 +114,7 @@ const slippageToleranceCreatePositionTiers = [
 const slippageToleranceCreatePositionSetting = {
   description:
     'Slippage tolerance is a pricing difference between the price at the confirmation time and the actual price of the transaction users are willing to accept when initializing position.',
-  label: 'Slippage Tolerance Create Position',
+  label: 'Position Slippage Tolerance',
   upperValueTreshHold: '50',
   lowerValueTreshHold: '0'
 }
@@ -148,7 +144,7 @@ const DepoSitOptionsModal: React.FC<Props> = ({
   handleClose,
   open
 }) => {
-  const { classes } = useStyles()
+  const { classes, cx } = useStyles()
   const isSm = useMediaQuery(theme.breakpoints.down('sm'))
   const [alignment, setAlignment] = useState<SettingsOptions>(SettingsOptions.Basic)
 
@@ -323,6 +319,7 @@ const DepoSitOptionsModal: React.FC<Props> = ({
           vertical: isSm ? 'top' : 'center',
           horizontal: 'center'
         }}
+        anchorEl={document.body}
         transformOrigin={{
           vertical: isSm ? 'top' : 'center',
           horizontal: 'center'
@@ -330,7 +327,7 @@ const DepoSitOptionsModal: React.FC<Props> = ({
         <Grid container className={classes.detailsWrapper}>
           <Grid container>
             <Box className={classes.headerContainer}>
-              <Typography className={classes.headerText}>Deposit Settings</Typography>
+              <Typography className={classes.headerText}>Autoswap Settings</Typography>
               <Typography className={classes.info}>
                 These settings enable liquidity addition with any token ratio while ensuring safe
                 swaps. Adjusting these parameters is recommended for advanced users familiar with
@@ -353,7 +350,7 @@ const DepoSitOptionsModal: React.FC<Props> = ({
                 <ToggleButton
                   value={SettingsOptions.Basic}
                   disableRipple
-                  className={classNames(
+                  className={cx(
                     classes.switchSettingsTypeButton,
                     alignment === SettingsOptions.Basic
                       ? classes.switchSelected
@@ -364,7 +361,7 @@ const DepoSitOptionsModal: React.FC<Props> = ({
                 <ToggleButton
                   value={SettingsOptions.Advanced}
                   disableRipple
-                  className={classNames(
+                  className={cx(
                     classes.switchSettingsTypeButton,
                     alignment === SettingsOptions.Advanced
                       ? classes.switchSelected
@@ -376,7 +373,9 @@ const DepoSitOptionsModal: React.FC<Props> = ({
             </Box>
           </Grid>
           <Divider className={classes.divider} />
-          <Box className={classes.optionsContainer}>{availableSettings.map(item => item)}</Box>
+          {availableSettings.map((item, index) => (
+            <React.Fragment key={index}>{item}</React.Fragment>
+          ))}
           <Divider className={classes.divider} />
           <Button
             className={classes.setAsDefaultBtn}

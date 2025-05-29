@@ -1,18 +1,28 @@
-import React, { useMemo, useEffect } from 'react'
+import React, { useMemo, useEffect, useState } from 'react'
 import PoolListItem from '@components/Stats/PoolListItem/PoolListItem'
 import { useStyles } from './style'
-import { Grid } from '@mui/material'
-import { BTC_TEST, NetworkType, SortTypePoolList, USDC_TEST, WSOL_TEST } from '@store/consts/static'
-import { PaginationList } from '@components/Pagination/Pagination'
+import { Grid, useMediaQuery } from '@mui/material'
+import {
+  BTC_TEST,
+  Intervals,
+  ITEMS_PER_PAGE,
+  NetworkType,
+  SortTypePoolList,
+  USDC_TEST,
+  WSOL_TEST
+} from '@store/consts/static'
+import { InputPagination } from '@common/Pagination/InputPagination/InputPagination'
 import { VariantType } from 'notistack'
 import { Keypair } from '@solana/web3.js'
-import classNames from 'classnames'
-import { colors } from '@static/theme'
-import { EmptyPlaceholder } from '@components/EmptyPlaceholder/EmptyPlaceholder'
+import { EmptyPlaceholder } from '@common/EmptyPlaceholder/EmptyPlaceholder'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@utils/utils'
+import { colors, theme } from '@static/theme'
+import { ISearchToken } from '@common/FilterSearch/FilterSearch'
+import { shortenAddress } from '@utils/uiUtils'
 
 export interface PoolListInterface {
+  initialLength: number
   data: Array<{
     symbolFrom: string
     symbolTo: string
@@ -41,9 +51,10 @@ export interface PoolListInterface {
   copyAddressHandler: (message: string, variant: VariantType) => void
   isLoading: boolean
   showAPY: boolean
+  filteredTokens: ISearchToken[]
+  interval: Intervals
 }
 
-const ITEMS_PER_PAGE = 10
 const tokens = [BTC_TEST, USDC_TEST, WSOL_TEST]
 const fees = [0.01, 0.02, 0.1, 0.3, 0.9, 1]
 
@@ -79,11 +90,18 @@ const PoolList: React.FC<PoolListInterface> = ({
   network,
   copyAddressHandler,
   isLoading,
-  showAPY
+  showAPY,
+  initialLength,
+  filteredTokens,
+  interval = Intervals.Daily
 }) => {
   const navigate = useNavigate()
 
-  const { classes } = useStyles()
+  const [initialDataLength, setInitialDataLength] = useState(initialLength)
+  const { classes, cx } = useStyles()
+  const filteredTokenX = filteredTokens[0] ?? ''
+  const filteredTokenY = filteredTokens[1] ?? ''
+
   const [page, setPage] = React.useState(1)
   const [sortType, setSortType] = React.useState(SortTypePoolList.VOLUME_DESC)
 
@@ -105,6 +123,10 @@ const PoolList: React.FC<PoolListInterface> = ({
         return data.sort((a, b) => a.fee - b.fee)
       case SortTypePoolList.FEE_DESC:
         return data.sort((a, b) => b.fee - a.fee)
+      case SortTypePoolList.FEE_24_ASC:
+        return data.sort((a, b) => a.fee * a.volume - b.fee * b.volume)
+      case SortTypePoolList.FEE_24_DESC:
+        return data.sort((a, b) => b.fee * b.volume - a.fee * a.volume)
       case SortTypePoolList.VOLUME_ASC:
         return data.sort((a, b) => (a.volume === b.volume ? a.TVL - b.TVL : a.volume - b.volume))
       case SortTypePoolList.VOLUME_DESC:
@@ -121,39 +143,60 @@ const PoolList: React.FC<PoolListInterface> = ({
   }, [data, sortType])
 
   useEffect(() => {
-    setPage(1)
-  }, [data])
+    setInitialDataLength(initialLength)
+  }, [initialLength])
 
-  const handleChangePagination = (currentPage: number) => setPage(currentPage)
-  const paginator = (currentPage: number) => {
-    const page = currentPage || 1
-    const perPage = 10
-    const offest = (page - 1) * perPage
+  const getEmptyRowsCount = () => {
+    const displayedItems = paginator(page).length
+    const rowNumber = initialDataLength < ITEMS_PER_PAGE ? initialDataLength : ITEMS_PER_PAGE
 
-    return sortedData.slice(offest).slice(0, perPage)
+    return Math.max(rowNumber - displayedItems, 0)
   }
 
-  const pages = Math.ceil(data.length / 10)
+  const handleChangePagination = (currentPage: number) => setPage(currentPage)
+
+  const paginator = (currentPage: number) => {
+    const page = currentPage || 1
+    const offest = (page - 1) * ITEMS_PER_PAGE
+
+    return sortedData.slice(offest).slice(0, ITEMS_PER_PAGE)
+  }
+
+  const totalItems = useMemo(() => sortedData.length, [sortedData])
+  const lowerBound = useMemo(() => (page - 1) * ITEMS_PER_PAGE + 1, [page])
+  const upperBound = useMemo(() => Math.min(page * ITEMS_PER_PAGE, totalItems), [totalItems, page])
+
+  const pages = useMemo(() => Math.ceil(data.length / ITEMS_PER_PAGE), [data])
+  const isCenterAligment = useMediaQuery(theme.breakpoints.down(1280))
+  const height = useMemo(
+    () => (initialDataLength > ITEMS_PER_PAGE ? (isCenterAligment ? 176 : 90) : 69),
+    [initialDataLength, isCenterAligment]
+  )
+
+  useEffect(() => {
+    setPage(1)
+  }, [data, pages])
 
   return (
     <Grid
       container
-      direction='column'
       classes={{ root: classes.container }}
-      className={classNames({ [classes.loadingOverlay]: isLoading })}>
+      className={cx({ [classes.loadingOverlay]: isLoading })}>
       <PoolListItem
         displayType='header'
         onSort={setSortType}
         sortType={sortType}
         network={network}
         showAPY={showAPY}
+        interval={interval}
       />
       {data.length > 0 || isLoading ? (
         <>
           {paginator(page).map((element, index) => (
             <PoolListItem
+              itemNumber={index + 1 + (page - 1) * ITEMS_PER_PAGE}
               displayType='token'
-              tokenIndex={index + 1 + (page - 1) * 10}
+              tokenIndex={index + 1 + (page - 1) * ITEMS_PER_PAGE}
               symbolFrom={element.symbolFrom}
               symbolTo={element.symbolTo}
               iconFrom={element.iconFrom}
@@ -167,7 +210,6 @@ const PoolList: React.FC<PoolListInterface> = ({
               isLocked={element.lockedX > 0 || element.lockedY > 0}
               fee={element.fee}
               apy={element.apy}
-              hideBottomLine={pages === 1 && index + 1 === data.length}
               apyData={element.apyData}
               key={index}
               addressFrom={element.addressFrom}
@@ -178,41 +220,63 @@ const PoolList: React.FC<PoolListInterface> = ({
               poolAddress={element.poolAddress}
               copyAddressHandler={copyAddressHandler}
               showAPY={showAPY}
+              interval={interval}
             />
           ))}
-          {new Array(10 - paginator(page).length).fill('').map((_, index) => (
-            <div
-              className={classNames(classes.emptyRow, {
-                [classes.emptyRowBorder]: index === 10 - paginator(page).length - 1
-              })}></div>
-          ))}
+          {getEmptyRowsCount() > 0 &&
+            new Array(getEmptyRowsCount()).fill('').map((_, index) => (
+              <div
+                key={`empty-row-${index}`}
+                style={{
+                  borderBottom:
+                    getEmptyRowsCount() - 1 === index
+                      ? `2px solid ${colors.invariant.light}`
+                      : `0px solid ${colors.invariant.light}`
+                }}
+                className={cx(classes.emptyRow)}
+              />
+            ))}
         </>
       ) : (
-        <Grid
-          container
-          sx={{
-            background: colors.invariant.component,
-            borderBottom: `1px solid ${colors.invariant.light}`
-          }}>
+        <Grid container className={classes.emptyContainer}>
           <EmptyPlaceholder
             newVersion
-            height={690}
-            mainTitle='Pool not found...'
-            desc='You can create it yourself!'
-            desc2='Or try adjusting your search criteria!'
-            onAction={() => navigate(ROUTES.NEW_POSITION)}
+            height={initialDataLength < ITEMS_PER_PAGE ? initialDataLength * 69 : 688}
+            mainTitle={`The ${shortenAddress(filteredTokenX.symbol ?? '')}/${shortenAddress(filteredTokenY.symbol ?? '')} pool was not found...`}
+            desc={initialDataLength < 3 ? '' : 'You can create it yourself!'}
+            desc2={initialDataLength < 5 ? '' : 'Or try adjusting your search criteria!'}
+            onAction={() =>
+              navigate(
+                ROUTES.getNewPositionRoute(filteredTokenX.address, filteredTokenY.address, '0_10'),
+                {
+                  state: { referer: 'stats' }
+                }
+              )
+            }
             buttonName='Create Pool'
             withButton={true}
+            withImg={initialDataLength > 3}
           />
         </Grid>
       )}
-      <Grid className={classes.pagination}>
-        {pages > 1 && (
-          <PaginationList
+      <Grid
+        className={classes.pagination}
+        sx={{
+          height: height
+        }}>
+        {pages > 0 && (
+          <InputPagination
             pages={pages}
             defaultPage={1}
             handleChangePage={handleChangePagination}
-            variant='flex-end'
+            variant='center'
+            page={page}
+            borderTop={false}
+            pagesNumeration={{
+              lowerBound: lowerBound,
+              totalItems: totalItems,
+              upperBound: upperBound
+            }}
           />
         )}
       </Grid>

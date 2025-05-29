@@ -5,6 +5,7 @@ const useStyles = makeStyles()(theme => {
   return {
     container: {
       display: 'flex',
+      flexWrap: 'wrap',
       justifyContent: 'center',
       alignItems: 'flex-start',
       backgroundColor: 'transparent',
@@ -12,38 +13,14 @@ const useStyles = makeStyles()(theme => {
       minHeight: '60vh',
 
       [theme.breakpoints.down('lg')]: {
-        paddingInline: 80
-      },
-
-      [theme.breakpoints.down('md')]: {
-        paddingInline: 90
+        paddingInline: 40
       },
 
       [theme.breakpoints.down('sm')]: {
         paddingInline: 8
       }
     },
-    notConnectedPlaceholder: {
-      marginTop: 65,
-      height: '400px',
-      width: '100%',
-      borderTopLeftRadius: '24px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
 
-      [theme.breakpoints.down('md')]: {
-        justifyContent: 'flex-start',
-        paddingTop: '90px'
-      },
-      [theme.breakpoints.down('sm')]: {
-        marginTop: 30
-      },
-
-      flexDirection: 'column',
-      borderTopRightRadius: '24px',
-      background: 'linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)'
-    },
     button: {
       height: 40,
       width: 200,
@@ -66,10 +43,15 @@ const useStyles = makeStyles()(theme => {
     innerContainer: {
       maxWidth: 1210,
       minHeight: '70vh',
+      display: 'flex',
+      justifyContent: 'center',
 
       [theme.breakpoints.down('md')]: {
         width: '100%'
       }
+    },
+    changeWalletButtonContainer: {
+      marginTop: 16
     }
   }
 })

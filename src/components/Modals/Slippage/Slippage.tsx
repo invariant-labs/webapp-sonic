@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import useStyles from './style'
-import { Box, Button, Grid, Input, Popover, Typography } from '@mui/material'
-import classNames from 'classnames'
-
+import { Box, Button as MUIButton, Grid, Input, Popover, Typography } from '@mui/material'
+import { Button } from '@common/Button/Button'
+import { typography } from '@static/theme'
 interface Props {
   open: boolean
   setSlippage: (slippage: string) => void
@@ -22,14 +22,14 @@ const Slippage: React.FC<Props> = ({
   infoText,
   headerText
 }) => {
-  const { classes } = useStyles()
+  const { classes, cx } = useStyles()
   const [slippTolerance, setSlippTolerance] = React.useState<string>(initialSlippage)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   const allowOnlyDigitsAndTrimUnnecessaryZeros: React.ChangeEventHandler<
     HTMLInputElement | HTMLTextAreaElement
   > = e => {
-    const value = e.target.value
+    const value = e.target.value.replace(/,/g, '.')
 
     const regex = /^\d*\.?\d*$/
     if (value === '' || regex.test(value)) {
@@ -63,7 +63,7 @@ const Slippage: React.FC<Props> = ({
   }
 
   const checkSlippage: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement> = e => {
-    const value = e.target.value
+    const value = e.target.value.replace(/,/g, '.')
 
     if (Number(value) > 50) {
       setSlippTolerance('50.00')
@@ -114,16 +114,20 @@ const Slippage: React.FC<Props> = ({
           horizontal: 'right'
         }}>
         <Grid container className={classes.detailsWrapper}>
-          <Grid container justifyContent='space-between' style={{ marginBottom: 6 }}>
+          <Grid container className={classes.headerWrapper}>
             <Typography component='h2'>{headerText ?? 'Exchange Settings'}</Typography>
-            <Button className={classes.selectTokenClose} onClick={handleClose} aria-label='Close' />
+            <MUIButton
+              className={classes.selectTokenClose}
+              onClick={handleClose}
+              aria-label='Close'
+            />
           </Grid>
           <Typography className={classes.label}>Slippage tolerance</Typography>
           <Grid container gap='9px'>
             {slippageTiers.map((tier, index) => (
-              <Button
+              <MUIButton
                 key={tier}
-                className={classNames(classes.slippagePercentageButton, {
+                className={cx(classes.slippagePercentageButton, {
                   [classes.slippagePercentageButtonActive]: index === tierIndex
                 })}
                 onClick={e => {
@@ -132,14 +136,14 @@ const Slippage: React.FC<Props> = ({
                   handleClose()
                 }}>
                 {tier}%
-              </Button>
+              </MUIButton>
             ))}
           </Grid>
           <Box marginTop='6px'>
             <Input
               disableUnderline
               placeholder='0.00'
-              className={classNames(
+              className={cx(
                 classes.detailsInfoForm,
                 tierIndex === -1 && classes.customSlippageActive
               )}
@@ -156,8 +160,13 @@ const Slippage: React.FC<Props> = ({
               endAdornment={
                 <>
                   %
-                  <button
-                    className={classes.detailsInfoBtn}
+                  <Button
+                    width={70}
+                    height={28}
+                    fontData={typography.body2}
+                    margin={'0px 0px 0px 8px'}
+                    borderRadius={9}
+                    scheme='green'
                     onClick={() => {
                       setSlippTolerance(Number(slippTolerance).toFixed(2))
                       setSlippage(String(Number(slippTolerance).toFixed(2)))
@@ -165,7 +174,7 @@ const Slippage: React.FC<Props> = ({
                       handleClose()
                     }}>
                     Save
-                  </button>
+                  </Button>
                 </>
               }
               classes={{

@@ -2,7 +2,9 @@ import RangeInput from '@components/Inputs/RangeInput/RangeInput'
 import SimpleInput from '@components/Inputs/SimpleInput/SimpleInput'
 import { Button, Grid, Typography } from '@mui/material'
 import {
+  calcPriceBySqrtPrice,
   calcPriceByTickIndex,
+  calculateConcentration,
   calculateConcentrationRange,
   calculateSqrtPriceFromBalance,
   calculateTickFromBalance,
@@ -18,7 +20,7 @@ import useStyles from './style'
 import { PositionOpeningMethod } from '@store/consts/types'
 import ConcentrationSlider from '../ConcentrationSlider/ConcentrationSlider'
 import { MINIMAL_POOL_INIT_PRICE } from '@store/consts/static'
-import AnimatedNumber from '@components/AnimatedNumber/AnimatedNumber'
+import AnimatedNumber from '@common/AnimatedNumber/AnimatedNumber'
 import { calculateTickDelta, getMaxTick, getMinTick } from '@invariant-labs/sdk-sonic/lib/utils'
 import { BN } from '@coral-xyz/anchor'
 import { priceToTickInRange } from '@invariant-labs/sdk-sonic/src/tick'
@@ -34,6 +36,7 @@ export interface IPoolInit {
   yDecimal: number
   tickSpacing: number
   midPriceIndex: number
+  midPriceSqrtPrice: BN
   onChangeMidPrice: (tickIndex: number, sqrtPrice: BN) => void
   currentPairReversed: boolean | null
   positionOpeningMethod?: PositionOpeningMethod
@@ -42,6 +45,9 @@ export interface IPoolInit {
   concentrationArray: number[]
   minimumSliderIndex: number
   currentFeeIndex: number
+  suggestedPrice: number
+  wasRefreshed: boolean
+  setWasRefreshed: (wasRefreshed: boolean) => void
 }
 
 export const PoolInit: React.FC<IPoolInit> = ({
@@ -55,6 +61,7 @@ export const PoolInit: React.FC<IPoolInit> = ({
   yDecimal,
   tickSpacing,
   midPriceIndex,
+  midPriceSqrtPrice,
   onChangeMidPrice,
   currentPairReversed,
   positionOpeningMethod,
@@ -62,7 +69,10 @@ export const PoolInit: React.FC<IPoolInit> = ({
   concentrationIndex,
   concentrationArray,
   minimumSliderIndex,
-  currentFeeIndex
+  currentFeeIndex,
+  suggestedPrice,
+  wasRefreshed,
+  setWasRefreshed
 }) => {
   const minTick = getMinTick(tickSpacing)
   const maxTick = getMaxTick(tickSpacing)
@@ -83,7 +93,7 @@ export const PoolInit: React.FC<IPoolInit> = ({
   const [rightInputRounded, setRightInputRounded] = useState((+rightInput).toFixed(12))
 
   const [midPriceInput, setMidPriceInput] = useState(
-    calcPriceByTickIndex(midPriceIndex, isXtoY, xDecimal, yDecimal).toFixed(8)
+    calcPriceBySqrtPrice(midPriceSqrtPrice, isXtoY, xDecimal, yDecimal).toFixed(8)
   )
 
   const handleUpdateConcentrationFromURL = (concentrationValue: number) => {
@@ -151,19 +161,25 @@ export const PoolInit: React.FC<IPoolInit> = ({
   }
 
   useEffect(() => {
-    const midPriceInConcentrationMode = validConcentrationMidPrice(midPriceInput)
+    if (!wasRefreshed) {
+      const midPriceInConcentrationMode = validConcentrationMidPrice(midPriceInput)
 
-    const sqrtPrice = calculateSqrtPriceFromBalance(
-      positionOpeningMethod === 'range' ? +midPriceInput : midPriceInConcentrationMode,
-      tickSpacing,
-      isXtoY,
-      xDecimal,
-      yDecimal
-    )
+      const sqrtPrice = calculateSqrtPriceFromBalance(
+        positionOpeningMethod === 'range' ? +midPriceInput : midPriceInConcentrationMode,
+        tickSpacing,
+        isXtoY,
+        xDecimal,
+        yDecimal
+      )
 
-    const priceTickIndex = priceToTickInRange(sqrtPrice, minTick, maxTick, tickSpacing)
+      const priceTickIndex = priceToTickInRange(sqrtPrice, minTick, maxTick, tickSpacing)
 
-    onChangeMidPrice(priceTickIndex, sqrtPrice)
+      onChangeMidPrice(priceTickIndex, sqrtPrice)
+    } else {
+      setTimeout(() => {
+        setWasRefreshed(false)
+      }, 1)
+    }
   }, [midPriceInput])
 
   const setLeftInputValues = (val: string) => {
@@ -298,16 +314,8 @@ export const PoolInit: React.FC<IPoolInit> = ({
     [midPriceInput, isXtoY, xDecimal, yDecimal]
   )
 
-  const [animatedStartingPrice, setAnimatedStartingPrice] = useState(price)
-
-  useEffect(() => {
-    if (formatNumberWithSuffix(price) !== formatNumberWithSuffix(animatedStartingPrice)) {
-      setAnimatedStartingPrice(price)
-    }
-  }, [price])
-
   return (
-    <Grid container direction='column' className={classes.wrapper}>
+    <Grid container className={classes.wrapper}>
       <Grid className={classes.topInnerWrapper}>
         <Typography className={classes.header}>Starting price</Typography>
         <Grid className={classes.infoWrapper}>
@@ -326,25 +334,29 @@ export const PoolInit: React.FC<IPoolInit> = ({
           onBlur={e => {
             setMidPriceInput(validateMidPriceInput(e.target.value || '0'))
           }}
+          formatterFunction={validateMidPriceInput}
+          suggestedPrice={suggestedPrice}
         />
 
-        <Grid
-          className={classes.priceWrapper}
-          container
-          justifyContent='space-between'
-          alignItems='center'>
+        <Grid className={classes.priceWrapper} container>
           <Typography className={classes.priceLabel}>{tokenASymbol} starting price: </Typography>
           <Typography className={classes.priceValue}>
             <span>~</span>
-            <AnimatedNumber start={animatedStartingPrice} finish={price} />
+            <AnimatedNumber value={price} format={formatNumberWithSuffix} />
             <span> </span>
             {tokenBSymbol}
           </Typography>
         </Grid>
       </Grid>
       <Grid className={classes.bottomInnerWrapper}>
-        <Grid container justifyContent='space-between' alignItems='center' minHeight={36}>
+        <Grid container className={classes.subheaderWrapper}>
           <Typography className={classes.subheader}>Set price range</Typography>
+          {positionOpeningMethod === 'range' && (
+            <Grid className={classes.rangeConcentration}>
+              <Typography>Concentration </Typography>
+              <Typography>{calculateConcentration(leftRange, rightRange).toFixed(2)}x</Typography>
+            </Grid>
+          )}
         </Grid>
         <Grid container className={classes.inputs}>
           <RangeInput
@@ -445,7 +457,7 @@ export const PoolInit: React.FC<IPoolInit> = ({
             />
           </Grid>
         ) : (
-          <Grid container className={classes.buttons} justifyContent='center' alignItems='center'>
+          <Grid container className={classes.buttons}>
             <Button className={classes.button} onClick={resetRange}>
               Reset range
             </Button>

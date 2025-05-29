@@ -77,11 +77,13 @@ export const colors = {
     lightHover2: '#4B5983',
     black: '#010514',
     textGrey: '#A9B6BF',
+    chartDisabled: '#545a5e',
     lightGrey: '#bac7d1',
     text: '#FFFFFF',
     silver: '#C6C5C7',
     bronze: '#C48643',
     Error: '#FB555F',
+    normal: '#2A365C',
     errorTransparent: 'rgba(251, 85, 95, 0.2)',
     greenLinearGradient: 'linear-gradient(180deg, #2EE09A 0%, #21A47C 100%)',
     greenLinearGradientOpacity:
@@ -97,6 +99,8 @@ export const colors = {
     bodyBackground: '#141b2d',
     warningTransparent: 'rgba(239, 208, 99, 0.2)',
     pinkGreenLinearGradient: 'linear-gradient(90deg, #EF84F5 0%, #2EE09A 100%)',
+    pinkGreenLinearGradientOpacity:
+      'linear-gradient(90deg, rgba(46, 224, 154, 0.15) 0%, rgba(46, 224, 154, 0) 50%), linear-gradient(90deg, rgba(239, 132, 245, 0) 50%, rgba(239, 132, 245, 0.15) 100%), #202946;',
     darkPinkGradient:
       'linear-gradient(180deg, rgba(239, 132, 245, 0.00) 0%, rgba(239, 132, 245, 0.10) 100%), #111931',
     darkGreenGradient:

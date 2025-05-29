@@ -1,9 +1,8 @@
 import React from 'react'
 import useStyles from './style'
 import { Grid, Popover, Typography } from '@mui/material'
-import copyAddressIcon from '@static/svg/copy-address.svg'
-import walletIcon from '@static/svg/wallet.svg'
-import disconnectIcon from '@static/svg/disconnect.svg'
+import { copyAddressIcon, disconnectIcon, walletIcon } from '@static/icons'
+
 export interface IConnectWalletModal {
   open: boolean
   anchorEl: HTMLButtonElement | null

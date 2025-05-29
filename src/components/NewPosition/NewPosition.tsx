@@ -1,24 +1,27 @@
-import { ProgressState } from '@components/AnimatedButton/AnimatedButton'
+import { ProgressState } from '@common/AnimatedButton/AnimatedButton'
 import Slippage from '@components/Modals/Slippage/Slippage'
-import Refresher from '@components/Refresher/Refresher'
+import Refresher from '@common/Refresher/Refresher'
 import { Box, Button, Grid, Hidden, Typography, useMediaQuery } from '@mui/material'
-import backIcon from '@static/svg/back-arrow.svg'
-import settingIcon from '@static/svg/settings.svg'
 import {
+  ADDRESSES_TO_REVERT_TOKEN_PAIRS,
   ALL_FEE_TIERS_DATA,
   autoSwapPools,
   DepositOptions,
   NetworkType,
   PositionTokenBlock,
-  REFRESHER_INTERVAL
+  REFRESHER_INTERVAL,
+  USDC_MAIN,
+  USDT_MAIN
 } from '@store/consts/static'
 import {
   addressToTicker,
   calcPriceByTickIndex,
+  calculateConcentration,
   calculateConcentrationRange,
   convertBalanceToBN,
   determinePositionTokenBlock,
   getConcentrationIndex,
+  initialXtoY,
   parseFeeToPathFee,
   printBN,
   ROUTES,
@@ -36,11 +39,11 @@ import MarketIdLabel from './MarketIdLabel/MarketIdLabel'
 import PoolInit from './PoolInit/PoolInit'
 import RangeSelector from './RangeSelector/RangeSelector'
 import useStyles from './style'
-import { BestTier, PositionOpeningMethod, TokenPriceData } from '@store/consts/types'
-import { TooltipHover } from '@components/TooltipHover/TooltipHover'
+import { PositionOpeningMethod, TokenPriceData } from '@store/consts/types'
+import { TooltipHover } from '@common/TooltipHover/TooltipHover'
 import { Status } from '@store/reducers/solanaWallet'
 import { SwapToken } from '@store/selectors/solanaWallet'
-import { InitMidPrice } from '@components/PriceRangePlot/PriceRangePlot'
+import { InitMidPrice } from '@common/PriceRangePlot/PriceRangePlot'
 import { PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import {
@@ -49,10 +52,11 @@ import {
   getMaxTick,
   getMinTick
 } from '@invariant-labs/sdk-sonic/lib/utils'
-import icons from '@static/icons'
+import { backIcon, newTabIcon, refreshIcon, settingIcon } from '@static/icons'
 import { theme } from '@static/theme'
 import { PoolWithAddress } from '@store/reducers/pools'
 import { Tick, Tickmap } from '@invariant-labs/sdk-sonic/lib/market'
+import { Button as MuiButton } from '@mui/material'
 
 export interface INewPosition {
   initialTokenFrom: string
@@ -110,7 +114,6 @@ export interface INewPosition {
   isWaitingForNewPool: boolean
   poolIndex: number | null
   currentPairReversed: boolean | null
-  bestTiers: BestTier[]
   currentPriceSqrt: BN
   handleAddToken: (address: string) => void
   commonTokens: PublicKey[]
@@ -137,11 +140,13 @@ export interface INewPosition {
   network: NetworkType
   isLoadingTokens: boolean
   solBalance: BN
-  actualPoolPrice: BN | null
   walletStatus: Status
   onConnectWallet: () => void
   onDisconnectWallet: () => void
   canNavigate: boolean
+  feeTiersWithTvl: Record<number, number>
+  totalTvl: number
+  isLoadingStats: boolean
   autoSwapPoolData: PoolWithAddress | null
   autoSwapTickmap: Tickmap | null
   autoSwapTicks: Tick[] | null
@@ -154,6 +159,7 @@ export interface INewPosition {
   onMaxSlippageToleranceCreatePositionChange: (val: string) => void
   initialMaxSlippageToleranceCreatePosition: string
   updateLiquidity: (lq: BN) => void
+  suggestedPrice: number
 }
 
 export const NewPosition: React.FC<INewPosition> = ({
@@ -182,7 +188,6 @@ export const NewPosition: React.FC<INewPosition> = ({
   isWaitingForNewPool,
   poolIndex,
   currentPairReversed,
-  bestTiers,
   handleAddToken,
   commonTokens,
   initialOpeningPositionMethod,
@@ -213,6 +218,9 @@ export const NewPosition: React.FC<INewPosition> = ({
   onConnectWallet,
   onDisconnectWallet,
   canNavigate,
+  feeTiersWithTvl,
+  totalTvl,
+  isLoadingStats,
   autoSwapPoolData,
   autoSwapTickmap,
   autoSwapTicks,
@@ -225,12 +233,14 @@ export const NewPosition: React.FC<INewPosition> = ({
   initialMaxSlippageToleranceSwap,
   onMaxSlippageToleranceCreatePositionChange,
   initialMaxSlippageToleranceCreatePosition,
-  actualPoolPrice
+  suggestedPrice
 }) => {
   const { classes } = useStyles()
   const navigate = useNavigate()
 
   const isMd = useMediaQuery(theme.breakpoints.down('md'))
+
+  const [isAutoSwapAvailable, setIsAutoSwapAvailable] = useState(false)
 
   const [positionOpeningMethod, setPositionOpeningMethod] = useState<PositionOpeningMethod>(
     initialOpeningPositionMethod
@@ -260,10 +270,13 @@ export const NewPosition: React.FC<INewPosition> = ({
 
   const [shouldReversePlot, setShouldReversePlot] = useState(false)
 
-  const concentrationArray = useMemo(() => {
+  const concentrationArray: number[] = useMemo(() => {
     const validatedMidPrice = validConcentrationMidPriceTick(midPrice.index, isXtoY, tickSpacing)
 
-    return getConcentrationArray(tickSpacing, 2, validatedMidPrice).sort((a, b) => a - b)
+    const array = getConcentrationArray(tickSpacing, 2, validatedMidPrice).sort((a, b) => a - b)
+    const maxConcentrationArray = [...array, calculateConcentration(0, tickSpacing)]
+
+    return maxConcentrationArray
   }, [tickSpacing, midPrice.index])
 
   const [concentrationIndex, setConcentrationIndex] = useState(
@@ -273,21 +286,27 @@ export const NewPosition: React.FC<INewPosition> = ({
     )
   )
 
-  const isAutoSwapAvailable = useMemo(
-    () =>
+  useEffect(() => {
+    if (isLoadingTicksOrTickmap || isWaitingForNewPool) return
+    setIsAutoSwapAvailable(
       tokenAIndex !== null &&
-      tokenBIndex !== null &&
-      autoSwapPools.some(
-        item =>
-          (item.pair.tokenX.equals(tokens[tokenAIndex].assetAddress) &&
-            item.pair.tokenY.equals(tokens[tokenBIndex].assetAddress)) ||
-          (item.pair.tokenX.equals(tokens[tokenBIndex].assetAddress) &&
-            item.pair.tokenY.equals(tokens[tokenAIndex].assetAddress))
-      ) &&
-      (isCurrentPoolExisting || isWaitingForNewPool) &&
-      isLoadingTicksOrTickmap,
-    [tokenAIndex, tokenBIndex, isCurrentPoolExisting, isWaitingForNewPool]
-  )
+        tokenBIndex !== null &&
+        autoSwapPools.some(
+          item =>
+            (item.pair.tokenX.equals(tokens[tokenAIndex].assetAddress) &&
+              item.pair.tokenY.equals(tokens[tokenBIndex].assetAddress)) ||
+            (item.pair.tokenX.equals(tokens[tokenBIndex].assetAddress) &&
+              item.pair.tokenY.equals(tokens[tokenAIndex].assetAddress))
+        ) &&
+        isCurrentPoolExisting
+    )
+  }, [
+    tokenAIndex,
+    tokenBIndex,
+    isCurrentPoolExisting,
+    isWaitingForNewPool,
+    isLoadingTicksOrTickmap
+  ])
 
   const isAutoswapOn = useMemo(
     () =>
@@ -299,8 +318,6 @@ export const NewPosition: React.FC<INewPosition> = ({
     if (isAutoSwapAvailable) {
       setAlignment(DepositOptions.Auto)
     } else if (!isAutoSwapAvailable && alignment === DepositOptions.Auto) {
-      setAlignment(DepositOptions.Basic)
-    } else {
       setAlignment(DepositOptions.Basic)
     }
   }, [isAutoSwapAvailable])
@@ -463,17 +480,6 @@ export const NewPosition: React.FC<INewPosition> = ({
     }
   }
 
-  const bestTierIndex =
-    tokenAIndex === null || tokenBIndex === null
-      ? undefined
-      : bestTiers.find(
-          tier =>
-            (tier.tokenX.equals(tokens[tokenAIndex].assetAddress) &&
-              tier.tokenY.equals(tokens[tokenBIndex].assetAddress)) ||
-            (tier.tokenX.equals(tokens[tokenBIndex].assetAddress) &&
-              tier.tokenY.equals(tokens[tokenAIndex].assetAddress))
-        )?.bestTierIndex ?? undefined
-
   const getMinSliderIndex = () => {
     let minimumSliderIndex = 0
 
@@ -509,16 +515,10 @@ export const NewPosition: React.FC<INewPosition> = ({
   }, [poolIndex, positionOpeningMethod, midPrice.index])
 
   useEffect(() => {
-    if (!isLoadingTicksOrTickmap && positionOpeningMethod === 'range') {
-      onChangeRange(leftRange, rightRange)
-    }
-  }, [midPrice.index, leftRange, rightRange])
-
-  useEffect(() => {
     if (positionOpeningMethod === 'range') {
       onChangeRange(leftRange, rightRange)
     }
-  }, [currentPriceSqrt])
+  }, [midPrice.index, leftRange, rightRange, currentPriceSqrt])
 
   const handleClickSettings = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget)
@@ -654,54 +654,219 @@ export const NewPosition: React.FC<INewPosition> = ({
 
   const simulationParams = useMemo(() => {
     return {
-      actualPoolPrice,
+      price: midPrice.sqrtPrice,
       lowerTickIndex: Math.min(leftRange, rightRange),
       upperTickIndex: Math.max(leftRange, rightRange)
     }
-  }, [leftRange, rightRange])
+  }, [leftRange, rightRange, midPrice])
 
   useEffect(() => {
-    setTokenADeposit('0')
-    setTokenBDeposit('0')
+    if (tokenAIndex === null || tokenBIndex === null) return
+    if (alignment === DepositOptions.Auto) {
+      setTokenACheckbox(true)
+      setTokenBCheckbox(true)
+      return
+    }
+    if (
+      (!tokenACheckbox || Number(tokenADeposit) === 0) &&
+      (!tokenBCheckbox || Number(tokenBDeposit) === 0)
+    ) {
+      setTokenADeposit('0')
+      setTokenBDeposit('0')
+      setTokenACheckbox(true)
+      setTokenBCheckbox(true)
+      return
+    }
+    if (
+      (!tokenACheckbox || Number(tokenADeposit) === 0) &&
+      tokenBCheckbox &&
+      Number(tokenBDeposit) > 0
+    ) {
+      setTokenADeposit(
+        getOtherTokenAmount(
+          convertBalanceToBN(tokenBDeposit, tokens[tokenBIndex].decimals),
+          leftRange,
+          rightRange,
+          false
+        )
+      )
+      setTokenACheckbox(true)
+      setTokenBCheckbox(true)
+      return
+    }
+    if (
+      (!tokenBCheckbox || Number(tokenBDeposit) === 0) &&
+      tokenACheckbox &&
+      Number(tokenADeposit) > 0
+    ) {
+      setTokenBDeposit(
+        getOtherTokenAmount(
+          convertBalanceToBN(tokenADeposit, tokens[tokenAIndex].decimals),
+          leftRange,
+          rightRange,
+          true
+        )
+      )
+      setTokenACheckbox(true)
+      setTokenBCheckbox(true)
+      return
+    }
     setTokenACheckbox(true)
     setTokenBCheckbox(true)
+
+    const { amount: secondValueBasedOnTokenA, liquidity: liquidityBasedOnTokenA } = calcAmount(
+      convertBalanceToBN(tokenADeposit, tokens[tokenAIndex].decimals),
+      leftRange,
+      rightRange,
+      tokens[tokenAIndex].assetAddress
+    )
+    const isBalanceEnoughForFirstCase =
+      secondValueBasedOnTokenA.lt(tokens[tokenBIndex].balance) &&
+      convertBalanceToBN(tokenADeposit, tokens[tokenAIndex].decimals).lt(
+        tokens[tokenAIndex].balance
+      )
+
+    const { amount: secondValueBasedOnTokenB, liquidity: liquidityBasedOnTokenB } = calcAmount(
+      convertBalanceToBN(tokenBDeposit, tokens[tokenBIndex].decimals),
+      leftRange,
+      rightRange,
+      tokens[tokenBIndex].assetAddress
+    )
+    const isBalanceEnoughForSecondCase =
+      secondValueBasedOnTokenB.lt(tokens[tokenAIndex].balance) &&
+      convertBalanceToBN(tokenBDeposit, tokens[tokenBIndex].decimals).lt(
+        tokens[tokenBIndex].balance
+      )
+
+    if (isBalanceEnoughForFirstCase && isBalanceEnoughForSecondCase) {
+      if (liquidityBasedOnTokenA.gt(liquidityBasedOnTokenB)) {
+        setTokenBDeposit(
+          trimLeadingZeros(printBN(secondValueBasedOnTokenA, tokens[tokenBIndex].decimals))
+        )
+        updateLiquidity(liquidityBasedOnTokenA)
+        return
+      }
+      setTokenADeposit(
+        trimLeadingZeros(printBN(secondValueBasedOnTokenB, tokens[tokenAIndex].decimals))
+      )
+      updateLiquidity(liquidityBasedOnTokenB)
+      return
+    }
+    if (!isBalanceEnoughForFirstCase && !isBalanceEnoughForSecondCase) {
+      if (liquidityBasedOnTokenA.gt(liquidityBasedOnTokenB)) {
+        setTokenADeposit(
+          trimLeadingZeros(printBN(secondValueBasedOnTokenB, tokens[tokenAIndex].decimals))
+        )
+        updateLiquidity(liquidityBasedOnTokenB)
+        return
+      }
+      setTokenBDeposit(
+        trimLeadingZeros(printBN(secondValueBasedOnTokenA, tokens[tokenBIndex].decimals))
+      )
+      updateLiquidity(liquidityBasedOnTokenA)
+      return
+    }
+    if (isBalanceEnoughForFirstCase) {
+      setTokenBDeposit(
+        trimLeadingZeros(printBN(secondValueBasedOnTokenA, tokens[tokenBIndex].decimals))
+      )
+      updateLiquidity(liquidityBasedOnTokenA)
+      return
+    }
+    setTokenADeposit(
+      trimLeadingZeros(printBN(secondValueBasedOnTokenB, tokens[tokenAIndex].decimals))
+    )
+    updateLiquidity(liquidityBasedOnTokenB)
   }, [alignment])
 
+  const [wasRefreshed, setWasRefreshed] = useState(false)
+
+  useEffect(() => {
+    if (isWaitingForNewPool) {
+      setWasRefreshed(true)
+    }
+  }, [isWaitingForNewPool])
+
+  const usdcPrice = useMemo(() => {
+    if (tokenAIndex === null || tokenBIndex === null) return null
+
+    const revertDenominator = initialXtoY(
+      tokens[tokenAIndex].assetAddress.toString(),
+      tokens[tokenBIndex].assetAddress.toString()
+    )
+
+    if (
+      tokens[tokenAIndex].assetAddress.equals(USDC_MAIN.address) ||
+      tokens[tokenBIndex].assetAddress.equals(USDC_MAIN.address) ||
+      tokens[tokenAIndex].assetAddress.equals(USDT_MAIN.address) ||
+      tokens[tokenBIndex].assetAddress.equals(USDT_MAIN.address)
+    ) {
+      return null
+    }
+
+    const shouldDisplayPrice =
+      ADDRESSES_TO_REVERT_TOKEN_PAIRS.includes(tokens[tokenAIndex].assetAddress.toString()) ||
+      ADDRESSES_TO_REVERT_TOKEN_PAIRS.includes(tokens[tokenBIndex].assetAddress.toString())
+
+    if (!shouldDisplayPrice) {
+      return null
+    }
+
+    const ratioToDenominator = revertDenominator ? midPrice.x : 1 / midPrice.x
+    const denominatorPrice = revertDenominator ? tokenBPriceData?.price : tokenAPriceData?.price
+
+    if (!denominatorPrice) {
+      return null
+    }
+
+    return {
+      token: revertDenominator ? tokens[tokenAIndex].symbol : tokens[tokenBIndex].symbol,
+      price: ratioToDenominator * denominatorPrice
+    }
+  }, [midPrice.x, priceALoading, priceBLoading])
+
   return (
-    <Grid container className={classes.wrapper} direction='column'>
+    <Grid container className={classes.wrapper}>
       <Link to={ROUTES.PORTFOLIO} style={{ textDecoration: 'none', maxWidth: 'fit-content' }}>
-        <Grid className={classes.back} container item alignItems='center'>
+        <Grid className={classes.back} container item>
           <img className={classes.backIcon} src={backIcon} alt='back' />
           <Typography className={classes.backText}>Positions</Typography>
         </Grid>
       </Link>
 
-      <Grid
-        container
-        justifyContent='space-between'
-        alignItems='center'
-        className={classes.headerContainer}
-        mb={1}>
+      <Grid container className={classes.headerContainer}>
         <Box className={classes.titleContainer}>
           <Typography className={classes.title}>Add new position</Typography>
 
-          {poolIndex !== null && tokenAIndex !== tokenBIndex && !isMd && (
-            <TooltipHover title='Refresh'>
-              <Box mr={2}>
-                <Refresher
-                  currentIndex={refresherTime}
-                  maxIndex={REFRESHER_INTERVAL}
-                  onClick={() => {
-                    onRefresh()
-                    setRefresherTime(REFRESHER_INTERVAL)
-                  }}
-                />
-              </Box>
+          {tokenAIndex !== tokenBIndex && !isMd && (
+            <TooltipHover title='Refresh' right={8}>
+              {isCurrentPoolExisting ? (
+                <Box
+                  mr={1}
+                  display='flex'
+                  alignItems='center'
+                  justifyContent='center'
+                  width={26}
+                  height={21}>
+                  <Refresher
+                    currentIndex={refresherTime}
+                    maxIndex={REFRESHER_INTERVAL}
+                    onClick={() => {
+                      onRefresh()
+                      setRefresherTime(REFRESHER_INTERVAL)
+                    }}
+                  />
+                </Box>
+              ) : (
+                <MuiButton onClick={onRefresh} className={classes.refreshIconBtn}>
+                  <img src={refreshIcon} className={classes.refreshIcon} alt='Refresh' />
+                </MuiButton>
+              )}
             </TooltipHover>
           )}
         </Box>
         {tokenAIndex !== null && tokenBIndex !== null && (
-          <Grid container item alignItems='center' className={classes.options}>
+          <Grid container item className={classes.options}>
             {poolIndex !== null && poolAddress ? (
               <>
                 <MarketIdLabel
@@ -719,7 +884,7 @@ export const NewPosition: React.FC<INewPosition> = ({
                         event.stopPropagation()
                       }}
                       className={classes.link}>
-                      <img width={8} height={8} src={icons.newTab} alt={'Token address'} />
+                      <img width={8} height={8} src={newTabIcon} alt={'Token address'} />
                     </a>
                   </Grid>
                 </TooltipHover>
@@ -758,18 +923,24 @@ export const NewPosition: React.FC<INewPosition> = ({
                   />
                 )}
               </Hidden>
-              {poolIndex !== null && tokenAIndex !== tokenBIndex && isMd && (
+              {tokenAIndex !== tokenBIndex && isMd && (
                 <TooltipHover title='Refresh'>
-                  <Box>
-                    <Refresher
-                      currentIndex={refresherTime}
-                      maxIndex={REFRESHER_INTERVAL}
-                      onClick={() => {
-                        onRefresh()
-                        setRefresherTime(REFRESHER_INTERVAL)
-                      }}
-                    />
-                  </Box>
+                  {isCurrentPoolExisting ? (
+                    <Box>
+                      <Refresher
+                        currentIndex={refresherTime}
+                        maxIndex={REFRESHER_INTERVAL}
+                        onClick={() => {
+                          onRefresh()
+                          setRefresherTime(REFRESHER_INTERVAL)
+                        }}
+                      />
+                    </Box>
+                  ) : (
+                    <MuiButton onClick={onRefresh} className={classes.refreshIconBtn}>
+                      <img src={refreshIcon} className={classes.refreshIcon} alt='Refresh' />
+                    </MuiButton>
+                  )}
                 </TooltipHover>
               )}
               {poolIndex !== null && (
@@ -799,7 +970,7 @@ export const NewPosition: React.FC<INewPosition> = ({
         />
       }
 
-      <Grid container className={classes.row} alignItems='stretch'>
+      <Grid container className={classes.row}>
         <DepositSelector
           tokenAIndex={tokenAIndex}
           tokenBIndex={tokenBIndex}
@@ -964,7 +1135,6 @@ export const NewPosition: React.FC<INewPosition> = ({
             }
           }}
           poolIndex={poolIndex}
-          bestTierIndex={bestTierIndex}
           handleAddToken={handleAddToken}
           commonTokens={commonTokens}
           initialHideUnknownTokensValue={initialHideUnknownTokensValue}
@@ -988,6 +1158,9 @@ export const NewPosition: React.FC<INewPosition> = ({
           onDisconnectWallet={onDisconnectWallet}
           canNavigate={canNavigate}
           isCurrentPoolExisting={isCurrentPoolExisting}
+          feeTiersWithTvl={feeTiersWithTvl}
+          totalTvl={totalTvl}
+          isLoadingStats={isLoadingStats}
           isAutoSwapAvailable={isAutoSwapAvailable}
           isAutoSwapOnTheSamePool={isAutoSwapOnTheSamePool}
           autoSwapPoolData={autoSwapPoolData}
@@ -1087,6 +1260,8 @@ export const NewPosition: React.FC<INewPosition> = ({
             unblockUpdatePriceRange={unblockUpdatePriceRange}
             onlyUserPositions={onlyUserPositions}
             setOnlyUserPositions={setOnlyUserPositions}
+            usdcPrice={usdcPrice}
+            suggestedPrice={suggestedPrice}
           />
         ) : (
           <PoolInit
@@ -1098,6 +1273,7 @@ export const NewPosition: React.FC<INewPosition> = ({
             tokenASymbol={tokenAIndex !== null ? tokens[tokenAIndex].symbol : 'ABC'}
             tokenBSymbol={tokenBIndex !== null ? tokens[tokenBIndex].symbol : 'XYZ'}
             midPriceIndex={midPrice.index}
+            midPriceSqrtPrice={midPrice.sqrtPrice}
             onChangeMidPrice={onChangeMidPrice}
             currentPairReversed={currentPairReversed}
             positionOpeningMethod={positionOpeningMethod}
@@ -1116,6 +1292,9 @@ export const NewPosition: React.FC<INewPosition> = ({
               )
             }
             currentFeeIndex={currentFeeIndex}
+            suggestedPrice={suggestedPrice}
+            wasRefreshed={wasRefreshed}
+            setWasRefreshed={setWasRefreshed}
           />
         )}
       </Grid>

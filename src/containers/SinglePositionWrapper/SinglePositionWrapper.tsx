@@ -1,4 +1,4 @@
-import { EmptyPlaceholder } from '@components/EmptyPlaceholder/EmptyPlaceholder'
+import { EmptyPlaceholder } from '@common/EmptyPlaceholder/EmptyPlaceholder'
 import PositionDetails from '@components/PositionDetails/PositionDetails'
 import { Grid, useMediaQuery } from '@mui/material'
 import loader from '@static/gif/loader.gif'
@@ -19,12 +19,17 @@ import { actions as snackbarsActions } from '@store/reducers/snackbars'
 import { Status, actions as walletActions } from '@store/reducers/solanaWallet'
 import { network, timeoutError } from '@store/selectors/solanaConnection'
 import {
-  currentPositionTicks,
   isLoadingPositionsList,
+  lockedPositionsNavigationData,
   plotTicks,
-  singlePositionData
+  positionData,
+  positionsNavigationData,
+  positionWithPoolData,
+  shouldDisable,
+  singlePositionData,
+  showFeesLoader as storeFeesLoader
 } from '@store/selectors/positions'
-import { balance, balanceLoading, status } from '@store/selectors/solanaWallet'
+import { balance, status } from '@store/selectors/solanaWallet'
 import { VariantType } from 'notistack'
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -35,11 +40,22 @@ import { getX, getY } from '@invariant-labs/sdk-sonic/lib/math'
 import { calculatePriceSqrt } from '@invariant-labs/sdk-sonic/src'
 import { calculateClaimAmount } from '@invariant-labs/sdk-sonic/lib/utils'
 import { lockerState } from '@store/selectors/locker'
-import icons from '@static/icons'
 import { theme } from '@static/theme'
+import { actions as statsActions } from '@store/reducers/stats'
+import { isLoading, lastInterval, poolsStatsWithTokensDetails } from '@store/selectors/stats'
+import { Intervals } from '@store/consts/static'
+import { poolsArraySortedByFees } from '@store/selectors/pools'
 
 export interface IProps {
   id: string
+}
+
+export type PoolDetails = {
+  tvl: number
+  volume24: number
+  fee24: number
+  apy: number
+  fee: number
 }
 
 export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
@@ -48,30 +64,34 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
+  const isFeesLoading = useSelector(storeFeesLoader)
   const currentNetwork = useSelector(network)
-  const position = useSelector(singlePositionData(id))
+  const singlePosition = useSelector(singlePositionData(id))
+  const positionPreview = useSelector(positionWithPoolData)
+  const position = singlePosition ?? positionPreview ?? undefined
+  const isPreview = !singlePosition
+  const { loading: positionPreviewLoading } = useSelector(positionData)
   const { success, inProgress } = useSelector(lockerState)
-
+  const poolsList = useSelector(poolsArraySortedByFees)
+  const statsPolsList = useSelector(poolsStatsWithTokensDetails)
   const isLoadingList = useSelector(isLoadingPositionsList)
+  const disableButton = useSelector(shouldDisable)
   const {
     allData: ticksData,
     loading: ticksLoading,
     hasError: hasTicksError
   } = useSelector(plotTicks)
-
-  const {
-    lowerTick,
-    upperTick,
-    loading: currentPositionTicksLoading
-  } = useSelector(currentPositionTicks)
+  useEffect(() => {
+    setShowFeesLoader(isFeesLoading)
+  }, [isFeesLoading])
 
   const walletStatus = useSelector(status)
   const solBalance = useSelector(balance)
-  const isBalanceLoading = useSelector(balanceLoading)
 
+  const navigationData = useSelector(positionsNavigationData)
+  const lockedNavigationData = useSelector(lockedPositionsNavigationData)
+  const poolStatsInterval = useSelector(lastInterval)
   const isTimeoutError = useSelector(timeoutError)
-
-  const [waitingForTicksData, setWaitingForTicksData] = useState<boolean | null>(null)
 
   const [showFeesLoader, setShowFeesLoader] = useState(true)
 
@@ -80,29 +100,85 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
 
   const [isClosingPosition, setIsClosingPosition] = useState(false)
 
+  const isLoadingStats = useSelector(isLoading)
+
+  const previousPosition = useMemo(() => {
+    const data = position?.isLocked ? lockedNavigationData : navigationData
+
+    if (data.length < 2) {
+      return null
+    }
+
+    const currentIndex = data.findIndex(position => position.id.toString() === id)
+
+    if (currentIndex === -1) {
+      return null
+    }
+
+    return data[currentIndex - 1] ?? null
+  }, [position?.isLocked, lockedNavigationData, navigationData, id])
+
+  const nextPosition = useMemo(() => {
+    const data = position?.isLocked ? lockedNavigationData : navigationData
+
+    if (data.length < 2) {
+      return null
+    }
+
+    const currentIndex = data.findIndex(position => position.id.toString() === id)
+
+    if (currentIndex === -1) {
+      return null
+    }
+
+    return data[currentIndex + 1] ?? null
+  }, [position?.isLocked, lockedNavigationData, navigationData, id])
+
+  const lastPosition = useMemo(() => {
+    const data = position?.isLocked ? lockedNavigationData : navigationData
+
+    if (data.length < 2) {
+      return null
+    }
+
+    return data[data.length - 1]
+  }, [position?.isLocked, lockedNavigationData, navigationData, id])
+
+  const paginationData = useMemo(() => {
+    const data = position?.isLocked ? lockedNavigationData : navigationData
+
+    const currentIndex = data.findIndex(position => position.id.toString() === id)
+    return {
+      totalPages: data.length,
+      currentPage: currentIndex + 1
+    }
+  }, [position?.isLocked, lockedNavigationData, navigationData])
+
+  const handleChangePagination = (currentIndex: number) => {
+    const data = position?.isLocked ? lockedNavigationData : navigationData
+    const navigateToData = data[currentIndex - 1]
+    navigate(ROUTES.getPositionRoute(navigateToData.id))
+  }
+
   useEffect(() => {
     if (position?.id) {
       dispatch(actions.setCurrentPositionId(id))
 
-      setWaitingForTicksData(true)
-      dispatch(actions.getCurrentPositionRangeTicks({ id }))
-
-      if (waitingForTicksData === null) {
+      if (position) {
         dispatch(
           actions.getCurrentPlotTicks({
             poolIndex: position.poolData.poolIndex,
             isXtoY: true
           })
         )
+
+        dispatch(
+          actions.getSinglePosition({ index: position.positionIndex, isLocked: position.isLocked })
+        )
       }
     }
-  }, [position?.id])
+  }, [position?.id.toString()])
 
-  useEffect(() => {
-    if (waitingForTicksData === true && !currentPositionTicksLoading) {
-      setWaitingForTicksData(false)
-    }
-  }, [currentPositionTicksLoading])
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const midPrice = useMemo(() => {
     if (position?.poolData) {
@@ -121,7 +197,7 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
       index: 0,
       x: 0
     }
-  }, [position?.id])
+  }, [position?.id.toString(), position?.poolData?.sqrtPrice])
 
   const leftRange = useMemo(() => {
     if (position) {
@@ -170,7 +246,7 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
             position.tokenY.decimals
           )
         : 0,
-    [position?.lowerTickIndex]
+    [position?.lowerTickIndex, position?.id.toString()]
   )
   const max = useMemo(
     () =>
@@ -181,7 +257,7 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
             position.tokenY.decimals
           )
         : 0,
-    [position?.upperTickIndex]
+    [position?.upperTickIndex, position?.id.toString()]
   )
   const current = useMemo(
     () =>
@@ -193,7 +269,7 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
             position.tokenY.decimals
           )
         : 0,
-    [position]
+    [position, position?.id.toString()]
   )
 
   const tokenXLiquidity = useMemo(() => {
@@ -238,15 +314,15 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
 
   const [tokenXClaim, tokenYClaim] = useMemo(() => {
     if (
-      waitingForTicksData === false &&
+      position?.ticksLoading === false &&
       position?.poolData &&
-      typeof lowerTick !== 'undefined' &&
-      typeof upperTick !== 'undefined'
+      typeof position?.lowerTick !== 'undefined' &&
+      typeof position?.upperTick !== 'undefined'
     ) {
       const [bnX, bnY] = calculateClaimAmount({
         position,
-        tickLower: lowerTick,
-        tickUpper: upperTick,
+        tickLower: position.lowerTick,
+        tickUpper: position.upperTick,
         tickCurrent: position.poolData.currentTickIndex,
         feeGrowthGlobalX: position.poolData.feeGrowthGlobalX,
         feeGrowthGlobalY: position.poolData.feeGrowthGlobalY
@@ -258,7 +334,7 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
     }
 
     return [0, 0]
-  }, [position, lowerTick, upperTick, waitingForTicksData])
+  }, [position])
 
   const data = useMemo(() => {
     if (ticksLoading && position) {
@@ -272,27 +348,35 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
     }
 
     return ticksData
-  }, [ticksData, ticksLoading, position?.id])
+  }, [ticksData, ticksLoading, position?.id.toString()])
 
   const [triggerFetchPrice, setTriggerFetchPrice] = useState(false)
 
   const [tokenXPriceData, setTokenXPriceData] = useState<TokenPriceData | undefined>(undefined)
+  const [pricesLoading, setPricesLoading] = useState(false)
+
   const [tokenYPriceData, setTokenYPriceData] = useState<TokenPriceData | undefined>(undefined)
 
   useEffect(() => {
     if (!position) {
       return
     }
-
+    setPricesLoading(true)
     const xAddr = position.tokenX.assetAddress.toString()
     getTokenPrice(xAddr, currentNetwork)
       .then(data => setTokenXPriceData({ price: data ?? 0 }))
       .catch(() => setTokenXPriceData(getMockedTokenPrice(position.tokenX.symbol, currentNetwork)))
+      .finally(() => {
+        setPricesLoading(false)
+      })
 
     const yAddr = position.tokenY.assetAddress.toString()
     getTokenPrice(yAddr, currentNetwork)
       .then(data => setTokenYPriceData({ price: data ?? 0 }))
       .catch(() => setTokenYPriceData(getMockedTokenPrice(position.tokenY.symbol, currentNetwork)))
+      .finally(() => {
+        setPricesLoading(false)
+      })
   }, [position?.id, triggerFetchPrice])
 
   const copyPoolAddressHandler = (message: string, variant: VariantType) => {
@@ -339,9 +423,14 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
     }
     setTriggerFetchPrice(!triggerFetchPrice)
     setShowFeesLoader(true)
-    dispatch(
-      actions.getSinglePosition({ index: position.positionIndex, isLocked: position.isLocked })
-    )
+
+    if (isPreview) {
+      dispatch(actions.getPreviewPosition(id))
+    } else {
+      dispatch(
+        actions.getSinglePosition({ index: position.positionIndex, isLocked: position.isLocked })
+      )
+    }
 
     if (position) {
       dispatch(
@@ -363,11 +452,22 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
   }, [isTimeoutError])
 
   useEffect(() => {
+    dispatch(actions.getPreviewPosition(id))
+  }, [poolsList.length])
+
+  useEffect(() => {
     if (!isLoadingList && isTimeoutError) {
       if (position?.positionIndex === undefined && isClosingPosition) {
         setIsClosingPosition(false)
         dispatch(connectionActions.setTimeoutError(false))
-        navigate(ROUTES.PORTFOLIO)
+
+        if (nextPosition) {
+          navigate(ROUTES.getPositionRoute(nextPosition.id))
+        } else if (previousPosition) {
+          navigate(ROUTES.getPositionRoute(previousPosition.id))
+        } else {
+          navigate(ROUTES.PORTFOLIO)
+        }
       } else {
         dispatch(connectionActions.setTimeoutError(false))
         onRefresh()
@@ -375,12 +475,38 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
     }
   }, [isLoadingList])
 
+  useEffect(() => {
+    dispatch(statsActions.getCurrentIntervalStats({ interval: Intervals.Daily }))
+  }, [])
+
+  const poolDetails = useMemo(() => {
+    if (!position) {
+      return null
+    }
+
+    const pool = statsPolsList.find(pool => pool.poolAddress.equals(position?.poolData.address))
+
+    if (!pool) {
+      return null
+    }
+
+    return {
+      tvl: pool.tvl,
+      volume24: pool.volume24,
+      fee24: (pool.volume24 * pool.fee) / 100,
+      apy: pool.apy,
+      fee: pool.fee
+    }
+  }, [poolsList])
+
   if (position) {
     return (
       <PositionDetails
+        shouldDisable={disableButton}
         tokenXAddress={position.tokenX.assetAddress}
         tokenYAddress={position.tokenY.assetAddress}
         poolAddress={position.poolData.address}
+        interval={poolStatsInterval || Intervals.Daily}
         copyPoolAddressHandler={copyPoolAddressHandler}
         detailsData={data}
         midPrice={midPrice}
@@ -388,27 +514,37 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
         rightRange={rightRange}
         currentPrice={current}
         onClickClaimFee={() => {
+          if (isPreview) return
+
           setShowFeesLoader(true)
           dispatch(actions.claimFee({ index: position.positionIndex, isLocked: position.isLocked }))
         }}
         lockPosition={() => {
+          if (isPreview) return
           dispatch(
             lockerActions.lockPosition({ index: position.positionIndex, network: currentNetwork })
           )
         }}
         closePosition={claimFarmRewards => {
+          if (isPreview) return
           setIsClosingPosition(true)
           dispatch(
             actions.closePosition({
               positionIndex: position.positionIndex,
               onSuccess: () => {
-                navigate(ROUTES.PORTFOLIO)
+                if (lastPosition && nextPosition) {
+                  navigate(ROUTES.getPositionRoute(lastPosition.id))
+                } else if (previousPosition) {
+                  navigate(ROUTES.getPositionRoute(previousPosition.id))
+                } else {
+                  navigate(ROUTES.PORTFOLIO)
+                }
               },
               claimFarmRewards
             })
           )
         }}
-        ticksLoading={ticksLoading || waitingForTicksData || !position}
+        ticksLoading={ticksLoading || !position}
         tickSpacing={position?.poolData.tickSpacing ?? 1}
         tokenX={{
           name: position.tokenX.symbol,
@@ -439,7 +575,7 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
         fee={position.poolData.fee}
         min={min}
         max={max}
-        showFeesLoader={showFeesLoader}
+        showFeesLoader={showFeesLoader || positionPreviewLoading || position.ticksLoading}
         hasTicksError={hasTicksError}
         reloadHandler={() => {
           dispatch(
@@ -450,16 +586,30 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
           )
         }}
         onRefresh={onRefresh}
-        isBalanceLoading={isBalanceLoading}
         network={currentNetwork}
         isLocked={position.isLocked}
         success={success}
         inProgress={inProgress}
         solBalance={solBalance}
+        poolDetails={poolDetails}
+        onGoBackClick={() => navigate(ROUTES.PORTFOLIO)}
+        showPoolDetailsLoader={isLoadingStats}
+        isPreview={isPreview}
+        showPositionLoader={position.ticksLoading}
+        pricesLoading={pricesLoading}
+        previousPosition={previousPosition}
+        nextPosition={nextPosition}
+        positionId={id}
+        paginationData={paginationData}
+        handleChangePagination={handleChangePagination}
       />
     )
   }
-  if ((isLoadingListDelay && walletStatus === Status.Initialized) || !isFinishedDelayRender) {
+  if (
+    (isLoadingListDelay && walletStatus === Status.Initialized) ||
+    !isFinishedDelayRender ||
+    positionPreviewLoading
+  ) {
     return (
       <Grid
         container
@@ -476,15 +626,12 @@ export const SinglePositionWrapper: React.FC<IProps> = ({ id }) => {
           newVersion
           themeDark
           style={isMobile ? { paddingTop: 8 } : {}}
-          onAction={() => {
-            navigate(ROUTES.getNewPositionRoute('0_01'))
-          }}
           roundedCorners={true}
-          desc='or start exploring liquidity pools now!'
-          buttonName='Explore pools'
+          mainTitle='Wallet is not connected'
+          desc='No liquidity positions to show'
+          withButton={false}
           connectButton={true}
           onAction2={() => dispatch(walletActions.connect(false))}
-          img={icons.NoConnected}
         />
       </Grid>
     )

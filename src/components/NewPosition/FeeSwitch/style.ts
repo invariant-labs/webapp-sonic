@@ -15,21 +15,35 @@ export const useStyles = makeStyles()(() => {
       ...typography.caption1,
       textAlign: 'center',
       top: 40
+    },
+    tabContainer: {
+      display: 'flex',
+      flexDirection: 'column'
+    },
+    tabTvl: {
+      ...typography.caption3
+    },
+    tabSelectedTvl: {
+      color: colors.invariant.textGrey
     }
   }
 })
 
-export const useTabsStyles = makeStyles()(() => {
+export const useTabsStyles = makeStyles<{
+  isBestTierHiddenOnLeft: boolean
+  isBestTierHiddenOnRight: boolean
+  hasValidBestTier: boolean
+}>()((_theme, { isBestTierHiddenOnLeft, isBestTierHiddenOnRight, hasValidBestTier }) => {
   return {
     root: {
       overflow: 'visible',
-      height: 36,
-      minHeight: 36,
+      height: 66,
+      minHeight: 66,
       margin: '4px 4px',
       borderRadius: 10
     },
     indicator: {
-      height: 36,
+      height: 66,
       borderRadius: 10,
       backgroundColor: colors.invariant.light,
       top: 0
@@ -39,8 +53,17 @@ export const useTabsStyles = makeStyles()(() => {
     },
     scrollButtons: {
       width: 24,
-      '& svg': {
-        fill: colors.invariant.text
+      '&:first-of-type svg': {
+        fill:
+          hasValidBestTier && isBestTierHiddenOnLeft
+            ? colors.invariant.green
+            : colors.invariant.text
+      },
+      '&:last-of-type svg': {
+        fill:
+          hasValidBestTier && isBestTierHiddenOnRight
+            ? colors.invariant.green
+            : colors.invariant.text
       },
       '&:hover svg': {
         transition: '0.3s',
@@ -56,27 +79,25 @@ export const useSingleTabStyles = makeStyles()(() => {
       zIndex: 1,
       textTransform: 'none',
       ...typography.body3,
-      height: 36,
-      minHeight: 36,
+      height: 66,
+      minHeight: 66,
       color: colors.invariant.light,
-      paddingInline: 0,
-      minWidth: 65,
-      width: 65,
-      marginRight: '7px',
+      padding: 0,
+      margin: 0,
+      minWidth: 74,
+      width: 74,
+      marginRight: 4,
       position: 'relative',
       overflow: 'visible',
       transition: '300ms',
       borderRadius: 10,
-
       '&:hover': {
         color: colors.invariant.lightHover,
         backgroundColor: colors.invariant.light,
-        height: 36,
         '@media (hover: none)': {
           color: colors.invariant.light
         }
       },
-
       '&:last-of-type': {
         marginRight: 0
       }
@@ -85,7 +106,6 @@ export const useSingleTabStyles = makeStyles()(() => {
       color: colors.invariant.green,
       border: `2px solid ${colors.invariant.green}`,
       borderRadius: 10,
-
       '&:hover': {
         color: colors.invariant.green
       }
@@ -94,7 +114,6 @@ export const useSingleTabStyles = makeStyles()(() => {
       ...typography.heading4,
       color: colors.white.main + ' !important',
       transition: 'color 300ms',
-
       '&:hover': {
         color: colors.white.main
       }

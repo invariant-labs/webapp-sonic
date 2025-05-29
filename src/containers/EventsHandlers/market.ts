@@ -3,43 +3,39 @@ import { useEffect, useState } from 'react'
 import { network, rpcAddress, status } from '@store/selectors/solanaConnection'
 import { Status, actions as solanaConnectionActions } from '@store/reducers/solanaConnection'
 import { actions } from '@store/reducers/pools'
-import { actions as positionsActions } from '@store/reducers/positions'
+import { actions as swapActions } from '@store/reducers/swap'
 import { poolsArraySortedByFees } from '@store/selectors/pools'
 import { swap } from '@store/selectors/swap'
-import { IWallet } from '@invariant-labs/sdk-sonic'
+import { IWallet, MAINNET_POOL_WHITELIST } from '@invariant-labs/sdk-sonic'
 import { PublicKey } from '@solana/web3.js'
 import { getMarketProgramSync } from '@utils/web3/programs/amm'
 import { getCurrentSolanaConnection } from '@utils/web3/connection'
 import { getFullNewTokensData, getNetworkTokensList, ROUTES } from '@utils/utils'
-import { getSonicWallet } from '@utils/web3/wallet'
-import {
-  currentPoolIndex,
-  currentPositionData,
-  currentPositionId,
-  lockedPositionsWithPoolsData,
-  positionsWithPoolsData
-} from '@store/selectors/positions'
+import { getSolanaWallet } from '@utils/web3/wallet'
+import { currentPoolIndex } from '@store/selectors/positions'
 import { useLocation } from 'react-router-dom'
+import { autoSwapPools } from '@store/consts/static'
+import { FEE_TIERS } from '@invariant-labs/sdk-sonic/lib/utils'
+import { parsePool } from '@invariant-labs/sdk-sonic/lib/market'
 
 const MarketEvents = () => {
   const dispatch = useDispatch()
   const networkType = useSelector(network)
   const rpc = useSelector(rpcAddress)
-  const wallet = getSonicWallet()
+  const wallet = getSolanaWallet()
   const marketProgram = getMarketProgramSync(networkType, rpc, wallet as IWallet)
   const { tokenFrom, tokenTo } = useSelector(swap)
   const networkStatus = useSelector(status)
   const allPools = useSelector(poolsArraySortedByFees)
-  const positionsList = useSelector(positionsWithPoolsData)
-  const lockedPositionsList = useSelector(lockedPositionsWithPoolsData)
-  const currentPositionIndex = useSelector(currentPositionId)
-  const currentPosition = useSelector(currentPositionData)
   const newPositionPoolIndex = useSelector(currentPoolIndex)
+  const [subscribedTwoHopSwapPools, _setSubscribedTwoHopSwapPools] = useState<Set<PublicKey>>(
+    new Set()
+  )
   const [subscribedSwapPools, _setSubscribedSwapPools] = useState<Set<string>>(new Set())
-  const [subscribedPositionsPools, _setSubscribedPositionsPools] = useState<Set<string>>(new Set())
   const [newPositionSubscribedPool, setNewPositionSubscribedPool] = useState<PublicKey>(
     PublicKey.default
   )
+  const [autoswapSubscribedPool, setAutoswapSubscribedPool] = useState<PublicKey>(PublicKey.default)
 
   const location = useLocation()
 
@@ -95,9 +91,47 @@ const MarketEvents = () => {
 
   // New position pool subscription
   useEffect(() => {
+    if (
+      networkStatus !== Status.Initialized ||
+      !marketProgram ||
+      !location.pathname.startsWith(ROUTES.NEW_POSITION)
+    ) {
+      return
+    }
+
     if (newPositionPoolIndex !== null && newPositionPoolIndex !== undefined) {
       const pool = allPools[newPositionPoolIndex]
+
       if (pool && !pool.address.equals(newPositionSubscribedPool)) {
+        const autoswapPool = autoSwapPools.find(
+          autoswapPool =>
+            autoswapPool.pair.tokenX.equals(pool.tokenX) &&
+            autoswapPool.pair.tokenY.equals(pool.tokenY)
+        )
+
+        if (autoswapPool) {
+          if (!autoswapSubscribedPool.equals(autoswapPool.swapPool.address)) {
+            marketProgram.program.account.pool.unsubscribe(autoswapSubscribedPool)
+            setAutoswapSubscribedPool(autoswapPool.swapPool.address)
+            marketProgram.onPoolChange(
+              pool.tokenX,
+              pool.tokenY,
+              FEE_TIERS[autoswapPool.swapPool.feeIndex],
+              poolStructure => {
+                dispatch(
+                  actions.updatePool({
+                    address: pool.address,
+                    poolStructure
+                  })
+                )
+              }
+            )
+          }
+        } else {
+          marketProgram.program.account.pool.unsubscribe(autoswapSubscribedPool)
+          setAutoswapSubscribedPool(PublicKey.default)
+        }
+
         marketProgram.program.account.pool.unsubscribe(newPositionSubscribedPool)
         setNewPositionSubscribedPool(pool.address)
         marketProgram.onPoolChange(
@@ -116,107 +150,6 @@ const MarketEvents = () => {
       }
     }
   }, [dispatch, networkStatus, newPositionPoolIndex])
-
-  // User position pool subscriptions
-  useEffect(() => {
-    if (
-      networkStatus !== Status.Initialized ||
-      !marketProgram ||
-      (!location.pathname.startsWith(ROUTES.PORTFOLIO) &&
-        !location.pathname.startsWith(ROUTES.POSITION))
-    ) {
-      return
-    }
-
-    const connectEvents = () => {
-      const allPositions = [...positionsList, ...lockedPositionsList]
-
-      const pools = allPositions.map(position => position.poolData)
-
-      const poolsAddresses = pools.map(pool => pool.address.toBase58())
-      const unsubscribedPools = Array.from(subscribedPositionsPools).filter(
-        pool => !poolsAddresses.includes(pool)
-      )
-
-      for (const pool of unsubscribedPools) {
-        marketProgram.program.account.pool.unsubscribe(new PublicKey(pool))
-        subscribedPositionsPools.delete(pool)
-      }
-
-      for (const pool of pools) {
-        if (subscribedPositionsPools.has(pool.address.toBase58())) {
-          continue
-        }
-
-        subscribedPositionsPools.add(pool.address.toBase58())
-
-        marketProgram.onPoolChange(
-          pool.tokenX,
-          pool.tokenY,
-          { fee: pool.fee, tickSpacing: pool.tickSpacing },
-          poolStructure => {
-            const positionsInPool = allPositions.filter(position =>
-              position.pool.equals(pool.address)
-            )
-
-            if (pool.currentTickIndex !== poolStructure.currentTickIndex) {
-              positionsInPool.map(position => {
-                //update current position details
-                if (
-                  currentPositionIndex ===
-                    position.id.toString() + '_' + position.pool.toString() &&
-                  currentPosition
-                ) {
-                  if (
-                    (pool.currentTickIndex >= currentPosition?.lowerTickIndex &&
-                      poolStructure.currentTickIndex < currentPosition?.lowerTickIndex) ||
-                    (pool.currentTickIndex < currentPosition?.lowerTickIndex &&
-                      poolStructure.currentTickIndex >= currentPosition?.lowerTickIndex)
-                  ) {
-                    dispatch(
-                      positionsActions.getCurrentPositionRangeTicks({
-                        id: currentPositionIndex,
-                        fetchTick: 'lower'
-                      })
-                    )
-                  } else if (
-                    (pool.currentTickIndex < currentPosition?.upperTickIndex &&
-                      poolStructure.currentTickIndex >= currentPosition?.upperTickIndex) ||
-                    (pool.currentTickIndex >= currentPosition?.upperTickIndex &&
-                      poolStructure.currentTickIndex < currentPosition?.upperTickIndex)
-                  ) {
-                    dispatch(
-                      positionsActions.getCurrentPositionRangeTicks({
-                        id: currentPositionIndex,
-                        fetchTick: 'upper'
-                      })
-                    )
-                  }
-                }
-              })
-            }
-
-            dispatch(
-              actions.updatePool({
-                address: pool.address,
-                poolStructure
-              })
-            )
-          }
-        )
-      }
-    }
-
-    connectEvents()
-  }, [
-    dispatch,
-    lockedPositionsList,
-    positionsList,
-    networkStatus,
-    marketProgram,
-    currentPositionIndex,
-    location.pathname
-  ])
 
   useEffect(() => {
     window.addEventListener('unhandledrejection', e => {
@@ -244,6 +177,27 @@ const MarketEvents = () => {
         } else {
           marketProgram.program.account.pool.unsubscribe(new PublicKey(subscribedPool))
           subscribedSwapPools.delete(subscribedPool)
+        }
+      }
+
+      if (subscribedTwoHopSwapPools.size === 0) {
+        for (const pool of MAINNET_POOL_WHITELIST) {
+          const address = pool.pair.getAddress(marketProgram.program.programId)
+          subscribedTwoHopSwapPools.add(address)
+          marketProgram.onPoolChange(
+            pool.pair.tokenX,
+            pool.pair.tokenY,
+            { fee: pool.pair.feeTier.fee, tickSpacing: pool.pair.feeTier.tickSpacing },
+            poolStructure => {
+              const parsedPool = parsePool(poolStructure)
+              dispatch(
+                swapActions.updateSwapPool({
+                  address,
+                  pool: parsedPool
+                })
+              )
+            }
+          )
         }
       }
 
@@ -276,6 +230,10 @@ const MarketEvents = () => {
         marketProgram.program.account.pool.unsubscribe(new PublicKey(pool))
         subscribedSwapPools.delete(pool)
       }
+      for (const pool of Array.from(subscribedTwoHopSwapPools)) {
+        marketProgram.program.account.pool.unsubscribe(new PublicKey(pool))
+        subscribedTwoHopSwapPools.delete(pool)
+      }
     }
 
     // Unsubscribe from new position pool on different pages than new position
@@ -285,16 +243,8 @@ const MarketEvents = () => {
     ) {
       marketProgram.program.account.pool.unsubscribe(newPositionSubscribedPool)
       setNewPositionSubscribedPool(PublicKey.default)
-    }
-    // Unsubscribe from position details pools on different pages than portfolio
-    if (
-      !location.pathname.startsWith(ROUTES.PORTFOLIO) &&
-      !location.pathname.startsWith(ROUTES.POSITION)
-    ) {
-      for (const pool of Array.from(subscribedPositionsPools)) {
-        marketProgram.program.account.pool.unsubscribe(new PublicKey(pool))
-        subscribedPositionsPools.delete(pool)
-      }
+      marketProgram.program.account.pool.unsubscribe(autoswapSubscribedPool)
+      setAutoswapSubscribedPool(PublicKey.default)
     }
   }, [location.pathname])
 

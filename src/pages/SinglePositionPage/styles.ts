@@ -4,18 +4,17 @@ import { makeStyles } from 'tss-react/mui'
 const useStyles = makeStyles()((theme: Theme) => {
   return {
     container: {
+      width: '100%',
+      maxWidth: 1160,
+      margin: '0 auto',
       backgroundColor: 'transparent',
-      paddingInline: 138,
-      minHeight: '60vh',
+      paddingInline: 80,
+      justifyContent: 'center',
 
       [theme.breakpoints.down('lg')]: {
-        paddingInline: 36
+        paddingInline: 40,
+        maxWidth: 1080
       },
-
-      [theme.breakpoints.down('md')]: {
-        paddingInline: 40
-      },
-
       [theme.breakpoints.down('sm')]: {
         paddingInline: 8
       }

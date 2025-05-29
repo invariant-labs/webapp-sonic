@@ -1,18 +1,19 @@
 import { Box, Typography, useMediaQuery } from '@mui/material'
-import { isLoading, poolsStatsWithTokensDetails } from '@store/selectors/stats'
+import { isLoading, lastInterval, poolsStatsWithTokensDetails } from '@store/selectors/stats'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import useStyles from './styles'
-import icons from '@static/icons'
+import { unknownTokenIcon } from '@static/icons'
 import { VariantType } from 'notistack'
 import { actions as snackbarActions } from '@store/reducers/snackbars'
 import { network } from '@store/selectors/solanaConnection'
 import { actions } from '@store/reducers/stats'
 import LiquidityPoolList from '@components/LiquidityPoolList/LiquidityPoolList'
 
-import { FilterSearch, ISearchToken } from '@components/FilterSearch/FilterSearch'
+import { FilterSearch, ISearchToken } from '@common/FilterSearch/FilterSearch'
 import { theme } from '@static/theme'
+import { Intervals } from '@store/consts/static'
 
 export const WrappedPoolList: React.FC = () => {
   const dispatch = useDispatch()
@@ -25,6 +26,7 @@ export const WrappedPoolList: React.FC = () => {
 
   const { classes } = useStyles({ isXs })
   const [selectedFilters, setSelectedFilters] = useState<ISearchToken[]>([])
+  const lastFetchedInterval = useSelector(lastInterval)
 
   const filteredPoolsList = useMemo(() => {
     return poolsList.filter(poolData => {
@@ -62,7 +64,11 @@ export const WrappedPoolList: React.FC = () => {
   }
 
   useEffect(() => {
-    dispatch(actions.getCurrentStats())
+    dispatch(
+      actions.getCurrentIntervalStats({
+        interval: (lastFetchedInterval as Intervals) || Intervals.Daily
+      })
+    )
   }, [])
 
   return (
@@ -83,8 +89,8 @@ export const WrappedPoolList: React.FC = () => {
         data={filteredPoolsList.map(poolData => ({
           symbolFrom: poolData.tokenXDetails?.symbol ?? poolData.tokenX.toString(),
           symbolTo: poolData.tokenYDetails?.symbol ?? poolData.tokenY.toString(),
-          iconFrom: poolData.tokenXDetails?.logoURI ?? icons.unknownToken,
-          iconTo: poolData.tokenYDetails?.logoURI ?? icons.unknownToken,
+          iconFrom: poolData.tokenXDetails?.logoURI ?? unknownTokenIcon,
+          iconTo: poolData.tokenYDetails?.logoURI ?? unknownTokenIcon,
           volume: poolData.volume24,
           TVL: poolData.tvl,
           fee: poolData.fee,
@@ -104,10 +110,13 @@ export const WrappedPoolList: React.FC = () => {
           isUnknownTo: poolData.tokenYDetails?.isUnknown ?? false,
           poolAddress: poolData.poolAddress.toString()
         }))}
+        initialLength={poolsList.length}
         network={currentNetwork}
         copyAddressHandler={copyAddressHandler}
         isLoading={isLoadingStats}
         showAPY={showAPY}
+        filteredTokens={selectedFilters}
+        interval={lastFetchedInterval || Intervals.Daily}
       />
     </div>
   )

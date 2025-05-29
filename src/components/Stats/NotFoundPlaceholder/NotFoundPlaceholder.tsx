@@ -1,8 +1,7 @@
 import React from 'react'
 import useStyles from './style'
 import { Grid, Typography } from '@mui/material'
-import icons from '@static/icons'
-import classNames from 'classnames'
+import { emptyIcon } from '@static/icons'
 
 export interface INotFoundPlaceholder {
   title: string
@@ -11,18 +10,11 @@ export interface INotFoundPlaceholder {
 }
 
 const NotFoundPlaceholder: React.FC<INotFoundPlaceholder> = ({ title, subtitle, isStats }) => {
-  const { classes } = useStyles()
+  const { classes, cx } = useStyles({ isStats })
 
   return (
-    <Grid
-      container
-      flexDirection='column'
-      justifyContent='center'
-      alignItems='center'
-      my={isStats ? 0 : 5}
-      minHeight={isStats ? '690px' : '220px'}
-      className={classNames({ [classes.container]: isStats })}>
-      <img className={classes.img} src={icons.emptyIcon} alt='Not connected' />
+    <Grid container className={cx(classes.root, { [classes.container]: isStats })}>
+      <img className={classes.img} src={emptyIcon} alt='Not connected' />
       <Typography className={classes.title}>{title}</Typography>
       {subtitle && <Typography className={classes.subtitle}>{subtitle}</Typography>}
     </Grid>

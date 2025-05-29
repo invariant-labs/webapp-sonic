@@ -4,14 +4,12 @@ import useStyles from './style'
 import { blurContent, unblurContent } from '@utils/uiUtils'
 import { Box, Button, Typography } from '@mui/material'
 import { BN } from '@coral-xyz/anchor'
-import { TooltipHover } from '@components/TooltipHover/TooltipHover'
+import { TooltipHover } from '@common/TooltipHover/TooltipHover'
 import {
   NetworkType,
   WSOL_MIN_FAUCET_FEE_MAIN,
   WSOL_MIN_FAUCET_FEE_TEST
 } from '@store/consts/static'
-import classNames from 'classnames'
-import { typography, colors } from '@static/theme'
 
 export interface IProps {
   onFaucet: () => void
@@ -28,7 +26,7 @@ export const FaucetButton: React.FC<IProps> = ({
   network,
   walletBalance
 }) => {
-  const { classes } = useStyles()
+  const { classes, cx } = useStyles()
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
   const [openFaucet, setOpenFaucet] = React.useState<boolean>(false)
 
@@ -68,31 +66,15 @@ export const FaucetButton: React.FC<IProps> = ({
 
   return (
     <>
-      <TooltipHover title={getTooltipText()} top={50}>
+      <TooltipHover title={getTooltipText()} placement='bottom'>
         <div>
           <Button
-            className={classNames(classes.headerButton, { [classes.disabled]: isDisabled })}
+            className={cx(classes.headerButton, { [classes.disabled]: isDisabled })}
             variant='contained'
             onClick={isDisabled ? () => {} : handleClick}>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                height: '100%'
-              }}>
-              <Box style={{ color: colors.invariant.text, lineHeight: '12px', textAlign: 'left' }}>
-                {children}
-              </Box>
-              <Typography
-                style={{
-                  color: colors.invariant.textGrey,
-                  ...typography.caption4,
-                  marginTop: '4px',
-                  textAlign: 'left'
-                }}>
-                Get tokens
-              </Typography>
+            <Box className={classes.wrapper}>
+              <Box className={classes.childrenWrapper}>{children}</Box>
+              <Typography className={classes.buttonLabel}>Get tokens</Typography>
             </Box>
           </Button>
         </div>

@@ -14,7 +14,7 @@ import { Status as WalletStatus } from '@store/reducers/solanaWallet'
 import { actions as walletActions } from '@store/reducers/solanaWallet'
 import { actions } from '@store/reducers/positions'
 import { DEFAULT_PUBLICKEY } from '@store/consts/static'
-import { getSonicWallet } from '@utils/web3/wallet'
+import { getSolanaWallet } from '@utils/web3/wallet'
 import { ROUTES } from '@utils/utils'
 
 const RootPage: React.FC = memo(() => {
@@ -59,7 +59,7 @@ const RootPage: React.FC = memo(() => {
   const walletAddressRef = useRef('')
   useEffect(() => {
     const intervalId = setInterval(() => {
-      const addr = getSonicWallet()?.publicKey.toString()
+      const addr = getSolanaWallet()?.publicKey.toString()
       if (
         !walletAddressRef.current ||
         (walletAddressRef.current === DEFAULT_PUBLICKEY.toString() &&

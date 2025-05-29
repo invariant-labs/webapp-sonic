@@ -11,13 +11,19 @@ export const useStyles = makeStyles()((theme: Theme) => ({
       padding: '0 8px'
     }
   },
+  refreshIconContainer: {
+    display: 'flex',
+    alignItems: 'center'
+  },
 
   leftSection: {
     display: 'flex',
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
-
+    '& h1': {
+      height: '27px'
+    },
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column',
       alignItems: 'flex-start',
@@ -144,7 +150,16 @@ export const useStyles = makeStyles()((theme: Theme) => ({
   slippage: {
     position: 'absolute'
   },
+  tooltipRefresh: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 20,
+    height: 34,
+    minWidth: 'fit-content',
+    marginLeft: 8
+  },
   root: {
+    flexDirection: 'column',
     position: 'relative',
     maxWidth: 500,
     background: colors.invariant.component,
@@ -158,15 +173,6 @@ export const useStyles = makeStyles()((theme: Theme) => ({
     }
   },
 
-  connectWalletButton: {
-    height: '48px !important',
-    borderRadius: '16px !important',
-    width: '100%',
-
-    [theme.breakpoints.down('sm')]: {
-      width: '100% !important'
-    }
-  },
   tokenComponentTextContainer: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -404,6 +410,24 @@ export const useStyles = makeStyles()((theme: Theme) => ({
     paddingInline: 8,
     borderRadius: 10
   },
+  pointsBox: {
+    height: 27,
+    padding: '0px 8px',
+    borderRadius: 8,
+    backgroundColor: colors.invariant.component,
+    color: colors.invariant.textGrey,
+    fontSize: 16,
+    fontsWeigth: 500,
+    cursor: 'pointer',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textTransform: 'none',
+    gap: 4,
+    transition: 'all 0.3s ease-in-out'
+  },
+  pointsAmount: { color: colors.invariant.pink },
   darkGradientBackground: {
     background: 'linear-gradient(360deg, #010514 0%, #111931 100%)'
   },

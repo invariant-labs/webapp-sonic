@@ -1,11 +1,11 @@
 import RangeInput from '@components/Inputs/RangeInput/RangeInput'
-import PriceRangePlot, { TickPlotPositionData } from '@components/PriceRangePlot/PriceRangePlot'
-import { Button, Grid, Typography } from '@mui/material'
+import PriceRangePlot, { TickPlotPositionData } from '@common/PriceRangePlot/PriceRangePlot'
+import { Box, Button, Grid, Typography } from '@mui/material'
 import loader from '@static/gif/loader.gif'
-import activeLiquidity from '@static/svg/activeLiquidity.svg'
 import {
   calcPriceByTickIndex,
   calcTicksAmountInRange,
+  calculateConcentration,
   calculateConcentrationRange,
   formatNumberWithoutSuffix,
   getConcentrationIndex,
@@ -13,12 +13,13 @@ import {
   toMaxNumericPlaces
 } from '@utils/utils'
 import { PlotTickData } from '@store/reducers/positions'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import ConcentrationSlider from '../ConcentrationSlider/ConcentrationSlider'
 import useStyles from './style'
 import { PositionOpeningMethod } from '@store/consts/types'
 import { getMaxTick, getMinTick } from '@invariant-labs/sdk-sonic/lib/utils'
-import { TooltipGradient } from '@components/TooltipHover/TooltipGradient'
+import { warning3 } from '@static/icons'
+
 export interface IRangeSelector {
   updatePath: (concIndex: number) => void
   initialConcentration: string
@@ -57,6 +58,11 @@ export interface IRangeSelector {
   unblockUpdatePriceRange: () => void
   onlyUserPositions: boolean
   setOnlyUserPositions: (onlyUserPositions: boolean) => void
+  usdcPrice: {
+    token: string
+    price?: number
+  } | null
+  suggestedPrice: number
 }
 
 export const RangeSelector: React.FC<IRangeSelector> = ({
@@ -87,9 +93,11 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
   shouldReversePlot,
   setShouldReversePlot,
   shouldNotUpdatePriceRange,
-  unblockUpdatePriceRange
+  unblockUpdatePriceRange,
   // onlyUserPositions,
-  // setOnlyUserPositions
+  // setOnlyUserPositions,
+  usdcPrice,
+  suggestedPrice
 }) => {
   const { classes } = useStyles()
 
@@ -175,6 +183,51 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
       setPlotMin(newMin)
       setPlotMax(newMax)
     }
+  }
+
+  const moveLeft = () => {
+    const diff = plotMax - plotMin
+
+    const minPrice = isXtoY
+      ? calcPriceByTickIndex(getMinTick(tickSpacing), isXtoY, xDecimal, yDecimal)
+      : calcPriceByTickIndex(getMaxTick(tickSpacing), isXtoY, xDecimal, yDecimal)
+
+    const newLeft = plotMin - diff / 6
+    const newRight = plotMax - diff / 6
+
+    if (newLeft < minPrice - diff / 2) {
+      setPlotMin(minPrice - diff / 2)
+      setPlotMax(minPrice + diff / 2)
+    } else {
+      setPlotMin(newLeft)
+      setPlotMax(newRight)
+    }
+  }
+
+  const moveRight = () => {
+    const diff = plotMax - plotMin
+
+    const maxPrice = isXtoY
+      ? calcPriceByTickIndex(getMaxTick(tickSpacing), isXtoY, xDecimal, yDecimal)
+      : calcPriceByTickIndex(getMinTick(tickSpacing), isXtoY, xDecimal, yDecimal)
+
+    const newLeft = plotMin + diff / 6
+    const newRight = plotMax + diff / 6
+
+    if (newRight > maxPrice + diff / 2) {
+      setPlotMin(maxPrice - diff / 2)
+      setPlotMax(maxPrice + diff / 2)
+    } else {
+      setPlotMin(newLeft)
+      setPlotMax(newRight)
+    }
+  }
+
+  const centerChart = () => {
+    const diff = plotMax - plotMin
+
+    setPlotMin(midPrice.x - diff / 2)
+    setPlotMax(midPrice.x + diff / 2)
   }
 
   const setLeftInputValues = (val: string) => {
@@ -312,6 +365,25 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
     }
   }, [isLoadingTicksOrTickmap, isMountedRef, midPrice.index, poolIndex])
 
+  //Fix in case of reset chart not triggered correctly
+  useEffect(() => {
+    if (initReset === false) {
+      const timeoutId = setTimeout(() => {
+        if (
+          isXtoY
+            ? leftRange > midPrice.index || rightRange < midPrice.index
+            : leftRange < midPrice.index || rightRange > midPrice.index
+        ) {
+          resetPlot()
+        }
+      }, 100)
+
+      return () => {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [initReset])
+
   const autoZoomHandler = (left: number, right: number, canZoomCloser: boolean = false) => {
     const { leftInRange, rightInRange } = getTicksInsideRange(left, right, isXtoY)
 
@@ -415,7 +487,7 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
 
     const { leftRange, rightRange } = calculateConcentrationRange(
       tickSpacing,
-      concentrationArray[concentrationIndex],
+      concentrationArray[concentrationIndex] || 34,
       2,
       midPrice.index,
       isXtoY
@@ -425,88 +497,100 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
     autoZoomHandler(leftRange, rightRange, true)
   }, [tokenASymbol, tokenBSymbol])
 
+  const showPriceWarning = useMemo(() => {
+    const lowerBound = midPrice.x * 0.9
+    const upperBound = midPrice.x * 1.1
+    return suggestedPrice < lowerBound || suggestedPrice > upperBound
+  }, [suggestedPrice, midPrice.x])
+
   return (
-    <Grid container className={classes.wrapper} direction='column'>
+    <Grid container className={classes.wrapper}>
       <Grid className={classes.topInnerWrapper}>
-        <Grid className={classes.headerContainer} container justifyContent='space-between'>
-          <Grid>
+        <Grid className={classes.headerContainer} container>
+          <Grid className={classes.priceRangeContainer}>
             <Typography className={classes.header}>Price range</Typography>
+
             {poolIndex !== null && (
-              <Typography className={classes.currentPrice}>
+              <Typography className={classes.currentPrice} mt={0.5}>
                 {formatNumberWithoutSuffix(midPrice.x)} {tokenBSymbol} per {tokenASymbol}
               </Typography>
             )}
-          </Grid>
-          <Grid className={classes.activeLiquidityContainer} container direction='column'>
-            <TooltipGradient
-              title={
-                <>
-                  <Typography className={classes.liquidityTitle}>Active liquidity</Typography>
-                  <Typography className={classes.liquidityDesc} style={{ marginBottom: 12 }}>
-                    While selecting the price range, note where active liquidity is located. Your
-                    liquidity can be inactive and, as a consequence, not generate profits.
-                  </Typography>
-                  <Grid
-                    container
-                    direction='row'
-                    wrap='nowrap'
-                    alignItems='center'
-                    style={{ marginBottom: 12 }}>
-                    <Typography className={classes.liquidityDesc}>
-                      The active liquidity range is represented by white, dashed lines in the
-                      liquidity chart. Active liquidity is determined by the maximum price range
-                      resulting from the statistical volume of exchanges for the last 7 days.
-                    </Typography>
-                    <img className={classes.liquidityImg} src={activeLiquidity} alt='Liquidity' />
-                  </Grid>
-                  <Typography className={classes.liquidityNote}>
-                    Note: active liquidity borders are always aligned to the nearest initialized
-                    ticks.
-                  </Typography>
-                </>
-              }
-              placement='bottom'
-              top={1}
-              noGradient>
-              <Typography className={classes.activeLiquidity}>
-                Active liquidity <span className={classes.activeLiquidityIcon}>i</span>
+            {poolIndex !== null && usdcPrice !== null && usdcPrice.price && (
+              <Typography className={classes.usdcCurrentPrice}>
+                {usdcPrice.token} ${formatNumberWithoutSuffix(usdcPrice.price)}
               </Typography>
-            </TooltipGradient>
-            <Grid>
-              <Typography className={classes.currentPrice}>Current price ━━━</Typography>
-            </Grid>
+            )}
+            {suggestedPrice !== 0 && showPriceWarning && !blocked && !isLoadingTicksOrTickmap && (
+              <Box className={classes.priceWarningContainer}>
+                <img className={classes.priceWarningIcon} src={warning3} alt='warning icon' />
+                <Typography className={classes.priceWarning}>
+                  The pool price may differ from the actual price
+                </Typography>
+              </Box>
+            )}
+          </Grid>
+          <Grid className={classes.currentPriceContainer}>
+            <Typography className={classes.currentPrice} mb={0}>
+              Current price
+            </Typography>
+            <Typography className={classes.currentPrice} ml={0.5} mt={'4px'}>
+              ━━━
+            </Typography>
           </Grid>
         </Grid>
         <PriceRangePlot
           className={classes.plot}
-          data={data}
+          plotData={data}
           onChangeRange={changeRangeHandler}
-          leftRange={{
+          leftRangeData={{
             index: leftRange,
             x: calcPriceByTickIndex(leftRange, isXtoY, xDecimal, yDecimal)
           }}
-          rightRange={{
+          rightRangeData={{
             index: rightRange,
             x: calcPriceByTickIndex(rightRange, isXtoY, xDecimal, yDecimal)
           }}
-          midPrice={midPrice}
-          plotMin={plotMin}
-          plotMax={plotMax}
+          midPriceData={midPrice}
+          plotMinData={plotMin}
+          plotMaxData={plotMax}
           zoomMinus={zoomMinus}
           zoomPlus={zoomPlus}
-          loading={isLoadingTicksOrTickmap}
+          loading={isLoadingTicksOrTickmap && !blocked}
           isXtoY={isXtoY}
-          tickSpacing={tickSpacing}
+          spacing={tickSpacing}
           xDecimal={xDecimal}
           yDecimal={yDecimal}
           disabled={positionOpeningMethod === 'concentration'}
           hasError={hasTicksError}
           reloadHandler={reloadHandler}
+          moveLeft={moveLeft}
+          moveRight={moveRight}
+          centerChart={centerChart}
         />
+        {/* <FormControlLabel
+          control={
+            <Checkbox
+              checked={onlyUserPositions}
+              onChange={() => {
+                setOnlyUserPositions(!onlyUserPositions)
+              }}
+              name='onlyUserPositions'
+              color='secondary'
+            />
+          }
+          label='Show only your positions'
+          classes={{ label: classes.checkboxLabel }}
+        /> */}
       </Grid>
       <Grid container className={classes.innerWrapper}>
-        <Grid container justifyContent='space-between' alignItems='center' minHeight={36}>
+        <Grid container className={classes.subheaderWrapper}>
           <Typography className={classes.subheader}>Set price range</Typography>
+          {positionOpeningMethod === 'range' && (
+            <Grid className={classes.rangeConcentration}>
+              <Typography>Concentration </Typography>
+              <Typography>{calculateConcentration(leftRange, rightRange).toFixed(2)}x</Typography>
+            </Grid>
+          )}
         </Grid>
         <Grid container className={classes.inputs}>
           <RangeInput
@@ -616,7 +700,7 @@ export const RangeSelector: React.FC<IRangeSelector> = ({
             />
           </Grid>
         ) : (
-          <Grid container className={classes.buttons} justifyContent='center' alignItems='center'>
+          <Grid container className={classes.buttons}>
             <Button className={classes.button} onClick={resetPlot}>
               Reset range
             </Button>

@@ -14,8 +14,13 @@ interface BackpackProvider {
   ) => Promise<Transaction[] | VersionedTransaction[]>
   signMessage: (message: Uint8Array) => Promise<any>
   sendMessage: (message: Uint8Array) => Promise<any>
-  connect: () => Promise<void>
+  connect: (options?: {
+    chainGenesisHash?: string
+    reconnect?: boolean
+    onlyIfTrusted?: boolean
+  }) => Promise<void>
   disconnect: () => Promise<void>
+  connection: any
 }
 export class BackpackWalletAdapter implements WalletAdapter {
   _backpackProvider: BackpackProvider | undefined
@@ -79,6 +84,7 @@ export class BackpackWalletAdapter implements WalletAdapter {
       window.open('https://backpack.app/', '_blank')
       return
     }
+
     if (!provider.isConnected) {
       await provider.connect()
     }

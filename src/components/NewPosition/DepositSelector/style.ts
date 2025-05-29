@@ -5,6 +5,7 @@ export const useStyles = makeStyles()(theme => {
   return {
     wrapper: {
       borderRadius: 24,
+      flexDirection: 'column',
       backgroundColor: colors.invariant.component,
       padding: '16px 24px 16px 24px',
       flex: '1 1 0%',
@@ -25,6 +26,35 @@ export const useStyles = makeStyles()(theme => {
       lineHeight: '24px',
       maxWidth: 255,
       border: `1px solid ${colors.invariant.newDark}`
+    },
+
+    autoButton: {
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 0
+    },
+    autoText: {
+      marginRight: 3,
+      flex: '0 0 auto'
+    },
+    infoTooltip: {
+      marginLeft: 6,
+      marginRight: 6,
+      display: 'flex',
+      alignItems: 'center'
+    },
+    tooltipIconWrapper: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 12,
+      height: 12,
+      minWidth: 12,
+      minHeight: 12,
+      flex: '0 0 auto',
+      marginRight: 0
     },
     depositHeader: {
       width: '100%',
@@ -78,6 +108,8 @@ export const useStyles = makeStyles()(theme => {
       marginBottom: 3
     },
     selects: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
       gap: 12,
       marginBottom: 10
     },
@@ -197,13 +229,14 @@ export const useStyles = makeStyles()(theme => {
         }
       },
       letterSpacing: '-0.03em',
-      width: 46,
+      width: 60,
       height: 26,
+      padding: 0,
       [theme.breakpoints.down('sm')]: {
         height: 32
       }
     },
-    switchSelected: { colort: colors.invariant.text, fontWeight: 700 },
+    switchSelected: { color: colors.invariant.text, fontWeight: 700 },
     switchNotSelected: { color: colors.invariant.text, fontWeight: 400 },
     optionsIconBtn: {
       padding: 0,
@@ -224,6 +257,12 @@ export const useStyles = makeStyles()(theme => {
           }
         }
       }
+    },
+    skeleton: {
+      width: 128,
+      height: 28,
+      borderRadius: 9,
+      backgroundColor: colors.invariant.light
     },
     unknownWarning: {
       width: 'fit-content',
@@ -321,6 +360,13 @@ export const useStyles = makeStyles()(theme => {
       overflow: 'hidden',
       display: 'flex',
       alignItems: 'center'
+    },
+    loadingAnimation: {
+      width: 20,
+      height: 20,
+      position: 'absolute',
+      top: 'calc(50% - 10px)',
+      left: 'calc(50% - 10px)'
     }
   }
 })
