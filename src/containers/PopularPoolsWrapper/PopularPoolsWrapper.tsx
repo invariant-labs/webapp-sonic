@@ -6,7 +6,7 @@ import { unknownTokenIcon } from '@static/icons'
 import { actions } from '@store/reducers/stats'
 import { Grid } from '@mui/material'
 import { network } from '@store/selectors/solanaConnection'
-import { getPopularPools, Intervals } from '@store/consts/static'
+import { DEFAULT_PUBLICKEY, getPopularPools, Intervals } from '@store/consts/static'
 import { PublicKey } from '@solana/web3.js'
 
 export interface PopularPoolData {
@@ -42,14 +42,24 @@ export const PopularPoolsWrapper: React.FC = () => {
 
     let popularPools = getPopularPools(currentNetwork)
     if (popularPools.length === 0) {
-      popularPools = poolsList
-        .sort((a, b) => b.volume24 - a.volume24)
-        .slice(0, 4)
-        .map(pool => ({
-          tokenX: pool.tokenX.toString(),
-          tokenY: pool.tokenY.toString(),
-          fee: pool.fee.toString()
-        }))
+      if (poolsList.length === 0) {
+        popularPools = Array(4)
+          .fill(0)
+          .map((_, idx) => ({
+            tokenX: DEFAULT_PUBLICKEY.toString(),
+            tokenY: DEFAULT_PUBLICKEY.toString(),
+            fee: idx.toString()
+          }))
+      } else {
+        popularPools = poolsList
+          .sort((a, b) => b.volume24 - a.volume24)
+          .slice(0, 4)
+          .map(pool => ({
+            tokenX: pool.tokenX.toString(),
+            tokenY: pool.tokenY.toString(),
+            fee: pool.fee.toString()
+          }))
+      }
     }
 
     popularPools.map(pool => {

@@ -1,9 +1,9 @@
 import React from 'react'
 import { useStyles } from './style'
-import { Box } from '@mui/system'
 import { Button } from '@common/Button/Button'
 import { colors } from '@static/theme'
 import { Intervals as IntervalsKeys } from '@store/consts/static'
+import { Box } from '@mui/material'
 
 interface IntervalsProps {
   interval: string

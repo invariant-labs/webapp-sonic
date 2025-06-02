@@ -4,8 +4,7 @@ import { colors, theme, typography } from '@static/theme'
 import { linearGradientDef } from '@nivo/core'
 import { useStyles } from './style'
 import { TimeData } from '@store/reducers/stats'
-import { Grid, Typography, useMediaQuery } from '@mui/material'
-import { Box } from '@mui/system'
+import { Box, Grid, Typography, useMediaQuery } from '@mui/material'
 import { formatNumberWithSuffix, trimZeros } from '@utils/utils'
 import {
   getLimitingTimestamp,
