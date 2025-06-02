@@ -203,7 +203,7 @@ const TokensList: React.FC<ITokensList> = ({
           sx={{
             height: height
           }}>
-          {pages > 0 && (
+          {pages > 1 && (
             <InputPagination
               pages={pages}
               defaultPage={1}

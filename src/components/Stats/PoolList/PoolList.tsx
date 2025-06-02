@@ -264,7 +264,7 @@ const PoolList: React.FC<PoolListInterface> = ({
         sx={{
           height: height
         }}>
-        {pages > 0 && (
+        {pages > 1 && (
           <InputPagination
             pages={pages}
             defaultPage={1}

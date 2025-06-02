@@ -260,7 +260,7 @@ const LiquidityPoolList: React.FC<PoolListInterface> = ({
         sx={{
           height: height
         }}>
-        {pages > 0 && (
+        {pages > 1 && (
           <InputPagination
             borderTop={false}
             pages={pages}
