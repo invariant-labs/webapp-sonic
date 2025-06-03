@@ -27,7 +27,7 @@ const PopularPools: React.FC<IPopularPools> = ({ pools, isLoading, network, show
     return 4
   }, [isMdDown, isLgDown, isSmDown])
 
-  const { classes } = useStyles({ showSlider: slidesNumber < 4 })
+  const { classes } = useStyles()
 
   return (
     <Grid container mb={6}>
@@ -39,17 +39,19 @@ const PopularPools: React.FC<IPopularPools> = ({ pools, isLoading, network, show
           dots={isLgDown}
           draggable={isLgDown}
           touchMove={isLgDown}
-          infinite={false}
           speed={500}
           slidesToShow={slidesNumber}
           slidesToScroll={1}
           arrows={true}
+          autoplay={true}
+          autoplaySpeed={10000}
           className={classes.slider}
           dotsClass={`slick-dots ${classes.dots}`}
           appendDots={dots => <ul>{dots}</ul>}
           rows={1}>
           {pools.map(pool => (
             <Card
+              key={pool.addressFrom + pool.addressTo}
               poolAddress={pool.poolAddress}
               addressFrom={pool.addressFrom}
               addressTo={pool.addressTo}
@@ -67,7 +69,6 @@ const PopularPools: React.FC<IPopularPools> = ({ pools, isLoading, network, show
               isLoading={isLoading}
               network={network}
               showAPY={showAPY}
-              key={pool.poolAddress?.toString()}
             />
           ))}
         </Slider>

@@ -5,6 +5,7 @@ const useStyles = makeStyles()(theme => {
   return {
     wrapper: {
       borderRadius: 24,
+      flexDirection: 'column',
       backgroundColor: colors.invariant.component,
       padding: '16px 24px 6px 24px',
       flex: '1 1 0%',
@@ -17,7 +18,10 @@ const useStyles = makeStyles()(theme => {
       }
     },
     headerContainer: {
-      marginBottom: 12
+      justifyContent: 'space-between',
+      marginBottom: 12,
+      flexDirection: 'row',
+      minHeight: 65
     },
     header: {
       ...typography.heading4,
@@ -36,7 +40,11 @@ const useStyles = makeStyles()(theme => {
     },
     plot: {
       width: '100%',
-      height: 185
+      height: 185,
+      [theme.breakpoints.down('md')]: {
+        height: 253,
+        marginBottom: 24
+      }
     },
     subheader: {
       ...typography.heading4,
@@ -111,12 +119,13 @@ const useStyles = makeStyles()(theme => {
       zIndex: 99
     },
     buttons: {
+      justifyContent: 'center',
+      alignItems: 'center',
       marginTop: 4,
       width: '100%',
       height: 70,
       flexDirection: 'row',
-      gap: 16,
-      alignItems: 'center'
+      gap: 16
     },
     sliderWrapper: {
       paddingTop: 22,
@@ -218,19 +227,57 @@ const useStyles = makeStyles()(theme => {
       height: 60,
       marginLeft: 16
     },
+    currentPriceContainer: {
+      marginTop: 23
+    },
     currentPrice: {
       display: 'inline-block',
       color: colors.invariant.yellow,
-      ...typography.caption2,
-      textAlign: 'right'
+      ...typography.caption2
+    },
+    priceWarning: {
+      display: 'inline-block',
+      color: colors.invariant.Error,
+      ...typography.body2,
+      marginLeft: 4,
+      marginTop: 2,
+      fontSize: 14
+    },
+    priceWarningIcon: {
+      width: 16,
+      height: 16
+    },
+    priceWarningContainer: {
+      display: 'flex',
+      alignItems: 'center'
+    },
+    usdcCurrentPrice: {
+      display: 'inline-block',
+      color: colors.invariant.text,
+      ...typography.body2
     },
     checkboxLabel: {
       color: colors.invariant.textGrey,
       fontSize: 14,
       fontWeight: 'normal'
     },
-    activeLiquidityContainer: {
-      width: 'auto'
+    liquidityDescWrapper: {
+      flexDirection: 'row',
+      flexWrap: 'nowrap',
+      alignItems: 'center',
+      marginBottom: 12
+    },
+    subheaderWrapper: {
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      minHeight: 36,
+      rowGap: 16
+    },
+    priceRangeContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      minHeight: 87
     },
     rangeConcentration: {
       display: 'flex',

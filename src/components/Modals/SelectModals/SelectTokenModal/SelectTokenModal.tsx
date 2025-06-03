@@ -1,9 +1,8 @@
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
-import searchIcon from '@static/svg/lupa.svg'
 import { theme } from '@static/theme'
 import React, { forwardRef, memo, useEffect, useMemo, useRef, useState } from 'react'
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window'
-import useStyles from '../style'
+import useStyles from './style'
 import AddTokenModal from '@components/Modals/AddTokenModal/AddTokenModal'
 import {
   Box,
@@ -19,12 +18,12 @@ import {
 import { formatNumberWithSuffix, getTokenPrice, printBN } from '@utils/utils'
 import { SwapToken } from '@store/selectors/solanaWallet'
 import Scrollbars from 'rc-scrollbars'
-import icons from '@static/icons'
-import { TooltipHover } from '@components/TooltipHover/TooltipHover'
+import { TooltipHover } from '@common/TooltipHover/TooltipHover'
 import { PublicKey } from '@solana/web3.js'
 import { NetworkType } from '@store/consts/static'
 import CustomScrollbar from './CustomScrollbar'
 import { TokenIcon } from './TokenIcon'
+import { emptyIcon, newTabIcon, searchIcon, warningIcon } from '@static/icons'
 
 export interface ISelectTokenModal {
   tokens: SwapToken[]
@@ -84,21 +83,19 @@ const RowItem: React.FC<ListChildComponentProps<RowItemData>> = React.memo(
           ...style,
           width: 'calc(100% - 50px)'
         }}
-        alignItems='center'
-        wrap='nowrap'
         onClick={() => {
           onSelect(token.index)
         }}>
         <Box className={classes.imageContainer}>
           <TokenIcon icon={token.logoURI} name={token.name} />
-          {token.isUnknown && <img className={classes.warningIcon} src={icons.warningIcon} />}
+          {token.isUnknown && <img className={classes.warningIcon} src={warningIcon} />}
         </Box>
         <Grid container className={classes.tokenContainer}>
-          <Grid container direction='row' columnGap='6px' alignItems='center' wrap='nowrap'>
+          <Grid container className={classes.tokenHeaderWrapper}>
             <Typography className={classes.tokenName}>
               {token.symbol ? token.symbol : 'Unknown'}{' '}
             </Typography>
-            <Grid className={classes.tokenAddress} container direction='column'>
+            <Grid className={classes.tokenAddress} container>
               <a
                 href={`https://explorer.sonic.game/address/${token.assetAddress.toString()}${networkUrl}`}
                 target='_blank'
@@ -111,7 +108,7 @@ const RowItem: React.FC<ListChildComponentProps<RowItemData>> = React.memo(
                     '...' +
                     token.assetAddress.toString().slice(isXs ? -4 : -5, -1)}
                 </Typography>
-                <img width={8} height={8} src={icons.newTab} alt={'Token address'} />
+                <img width={8} height={8} src={newTabIcon} alt={'Token address'} />
               </a>
             </Grid>
           </Grid>
@@ -121,7 +118,7 @@ const RowItem: React.FC<ListChildComponentProps<RowItemData>> = React.memo(
             {token.name.length > (isXs ? 20 : 30) ? '...' : ''}
           </Typography>
         </Grid>
-        <Grid container alignItems='flex-end' flexDirection='column' wrap='nowrap'>
+        <Grid container className={classes.balanceWrapper}>
           {!hideBalances && Number(tokenBalance) > 0 ? (
             <>
               <Typography className={classes.tokenBalanceStatus} noWrap>
@@ -279,6 +276,7 @@ export const SelectTokenModal: React.FC<ISelectTokenModal> = memo(
           return '?cluster=testnet.v1'
       }
     }, [network])
+
     return (
       <>
         <Popover
@@ -305,12 +303,7 @@ export const SelectTokenModal: React.FC<ISelectTokenModal> = memo(
                 aria-label='Close'
               />
             </Grid>
-            <Grid
-              className={classes.topRow}
-              container
-              direction='row'
-              wrap='nowrap'
-              alignItems='center'>
+            <Grid className={classes.topRow} container>
               <Grid container className={classes.inputControl}>
                 <input
                   ref={inputRef}
@@ -367,7 +360,7 @@ export const SelectTokenModal: React.FC<ISelectTokenModal> = memo(
             <Box className={classes.tokenList}>
               {!filteredTokens.length && (
                 <Grid className={classes.noTokenFoundContainer}>
-                  <img className={classes.img} src={icons.empty} alt='Not connected' />
+                  <img className={classes.img} src={emptyIcon} alt='Not connected' />
                   <Typography className={classes.noTokenFoundPlaceholder}>
                     No token found...
                   </Typography>

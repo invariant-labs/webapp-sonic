@@ -1,187 +1,213 @@
-import clearIcon from './svg/clear.svg'
-import mainnetIcon from './svg/mainnet.svg'
-import devnetIcon from './svg/devnet.svg'
-import testnetIcon from './svg/testnet.svg'
-import logoTitle from './svg/Logo.svg'
-import logoShort from './svg/LogoShort.svg'
-import arrow from './svg/arrow.svg'
-import NoCon from './svg/no-connected.svg'
+import logoTitleIcon from './svg/Logo.svg'
+import logoShortIcon from './svg/LogoShort.svg'
+import arrowIcon from './svg/arrow.svg'
+import noConnectedIcon from './svg/no-connected.svg'
 import githubIcon from './svg/githubCircle.svg'
 import telegramIcon from './svg/telegramCircle.svg'
 import mediumIcon from './svg/mediumCircle.svg'
 import discordIcon from './svg/discordCircle.svg'
 import closeIcon from './svg/closeIcon.svg'
-import activeIcon from './svg/active.svg'
-import inactiveIcon from './svg/inactive.svg'
-import allIcon from './svg/all.svg'
 import docsIcon from './svg/docsCircle.svg'
 import closeSmallIcon from './svg/closeSmall.svg'
 import closeSmallGreenIcon from './svg/closeSmallGreen.svg'
 import successIcon from './svg/successIcon.svg'
 import xIcon from './svg/xCircle.svg'
-import unknownToken from './svg/unknownToken.svg'
-import newTab from './svg/newTab.svg'
-import selectToken from './svg/selectToken.svg'
-import copyAddress from './svg/copy-address.svg'
+import unknownTokenIcon from './svg/unknownToken.svg'
+import newTabIcon from './svg/newTab.svg'
+import selectTokenIcon from './svg/selectToken.svg'
+import copyAddressIcon from './svg/copy-address.svg'
 import emptyIcon from './svg/empty.svg'
 import plusIcon from './svg/plus.svg'
 import horizontalSwapIcon from './svg/horizontalSwapArrows.svg'
 import swapListIcon from './svg/swap-list.svg'
-import a0Logo from './svg/a0Logo.svg'
-import solanaLogo from './svg/solanaLogo.svg'
-import varaLogo from './svg/VaraLogo.svg'
+import a0LogoIcon from './svg/a0Logo.svg'
+import varaLogoIcon from './svg/VaraLogo.svg'
 import warningIcon from './svg/Warning.svg'
-import circleDiscord from './svg/circle-discord.svg'
-import circleTelegram from './svg/circle-telegram.svg'
-import sonic from './svg/sonic.svg'
-import alephiumLogo from './svg/alephiumLogo.svg'
+import circleDiscordIcon from './svg/circle-discord.svg'
+import circleTelegramIcon from './svg/circle-telegram.svg'
+import sonicIcon from './svg/sonic.svg'
 import phantomWalletIcon from './svg/phantom.svg'
 import solflareWalletIcon from './svg/solflare.svg'
 import backpackWalletIcon from './svg/backpack.svg'
-import nightlyConnect from './svg/nightlyGlyph.svg'
-import empty from './svg/empty-icon.svg'
-import newTabBtn from './svg/newTabBtn.svg'
-import cat1 from './svg/SolanaCreator/Cat1.svg'
-import cat2 from './svg/SolanaCreator/Cat2.svg'
-import dog1 from './svg/SolanaCreator/Dog1.svg'
-import dog2 from './svg/SolanaCreator/Dog2.svg'
+import nightlyConnectIcon from './svg/nightlyGlyph.svg'
+import emptyIconAlt from './svg/empty-icon.svg'
+import newTabBtnIcon from './svg/newTabBtn.svg'
+import cat1Icon from './svg/SolanaCreator/Cat1.svg'
+import cat2Icon from './svg/SolanaCreator/Cat2.svg'
+import dog1Icon from './svg/SolanaCreator/Dog1.svg'
+import dog2Icon from './svg/SolanaCreator/Dog2.svg'
 import lockIcon from './svg/lockIcon.svg'
-import airdrop from './svg/airdrop.svg'
-import nightly from './svg/nightly.svg'
-import airdropRainbow from './svg/airdropRainbow.svg'
-import audit from './svg/audit.svg'
-import warning2 from './svg/warning2.svg'
-import closeWarning from './svg/closeWarning.svg'
-import dropdown from './svg/dropdown.svg'
-import dropdownReverse from './svg/dropdownReverse.svg'
-import arrowLeft from './svg/arrowLeft.svg'
-import arrowRight from './svg/arrowRight.svg'
-import infoCircle from './svg/infoCircle.svg'
-import airdropGrey from './svg/airdropGrey.svg'
-import infoError from './svg/infoError.svg'
-import okxLogo from './svg/okx-logo.svg'
+import lockPositionIcon from './svg/lock.svg'
+import airdropIcon from './svg/airdrop.svg'
+import nightlyIcon from './svg/nightly.svg'
+import airdropRainbowIcon from './svg/airdropRainbow.svg'
+import auditIcon from './svg/audit.svg'
+import warning2Icon from './svg/warning2.svg'
+import closeWarningIcon from './svg/closeWarning.svg'
+import dropdownIcon from './svg/dropdown.svg'
+import dropdownReverseIcon from './svg/dropdownReverse.svg'
+import arrowLeftIcon from './svg/arrowLeft.svg'
+import arrowRightIcon from './svg/arrowRight.svg'
+import infoCircleIcon from './svg/infoCircle.svg'
+import airdropGreyIcon from './svg/airdropGrey.svg'
+import infoErrorIcon from './svg/infoError.svg'
+import okxLogoIcon from './svg/okx-logo.svg'
+import goldenInfoIcon from './svg/goldenInfoIcon.svg'
 import infoIcon from './svg/info.svg'
-import infoIconPink from './svg/infoIconPink.svg'
-import slider from './svg/slider.svg'
-import swapArrows from './svg/swap-arrows.svg'
+import infoIconPinkIcon from './svg/infoIconPink.svg'
+import sliderIcon from './svg/slider.svg'
+import swapArrowsIcon from './svg/swap-arrows.svg'
 import liquidityIcon from './svg/liquidity.svg'
 import walletIcon from './svg/wallet.svg'
 import statsIcon from './svg/stats.svg'
-import closeModal from './svg/closeModal.svg'
-import discordFill from './svg/discordFill.svg'
-import xFill from './svg/xFill.svg'
-import telegramFill from './svg/telegramFill.svg'
-import githubFill from './svg/githubFill.svg'
-import mediumFill from './svg/MediumFill.svg'
-import docsFill from './svg/docsFill.svg'
-import tokenCreator from './svg/tokenCreator.svg'
-import settings2 from './svg/settings2.svg'
-import mainnetGlow from './svg/mainnetGlow.svg'
-import testnetGlow from './svg/testnetGlow.svg'
-import active2 from './svg/active2.svg'
-import solanaGlow from './svg/solanaGlow.svg'
-import sonicGlow from './svg/sonicGlow.svg'
-import eclipseGlow from './svg/eclipseGlow.svg'
-import alephiumGlow from './svg/alephiumGlow.svg'
-import liquidityEmpty from './svg/liqudity_empty.svg'
-import assetsEmpty from './svg/assets_empty.svg'
-import settings3 from './svg/settings3.svg'
-import faucet from './svg/faucet.svg'
-import goldenInfoCircle from './svg/goldenInfoCircle.svg'
-import settingCirc from './svg/settings_ic.svg'
+import tokenCreatorIcon from './svg/tokenCreator.svg'
+import mainnetGlowIcon from './svg/mainnetGlow.svg'
+import testnetGlowIcon from './svg/testnetGlow.svg'
+import active2Icon from './svg/active2.svg'
+import solanaGlowIcon from './svg/solanaGlow.svg'
+import sonicGlowIcon from './svg/sonicGlow.svg'
+import eclipseGlowIcon from './svg/eclipseGlow.svg'
+import liquidityEmptyIcon from './svg/liqudity_empty.svg'
+import assetsEmptyIcon from './svg/assets_empty.svg'
+import settings3Icon from './svg/settings3.svg'
+import faucetIcon from './svg/faucet.svg'
+import searchIcon from './svg/lupaDark.svg'
+import navRightIcon from '@static/svg/navRight.svg'
+import navLeftIcon from '@static/svg/navLeft.svg'
+import checkIcon from '@static/svg/checkFill.svg'
+import disconnectIcon from '@static/svg/disconnect.svg'
+import refreshIcon from '@static/svg/refresh.svg'
+import backIcon from '@static/svg/back-arrow.svg'
+import settingIcon from '@static/svg/settings.svg'
+import unlockIcon from '@static/svg/unlock.svg'
+import swapPositionIcon from '@static/svg/swap-position.svg'
+import handleMaxIcon from '@static/svg/narrowChartMaxHandle.svg'
+import handleMinIcon from '@static/svg/narrowChartMinHandle.svg'
+import zoomInIcon from '@static/svg/zoom-in-icon.svg'
+import zoomOutIcon from '@static/svg/zoom-out-icon.svg'
+import backArrowIcon from '@static/svg/back-arrow.svg'
+import lockIcon2 from '@static/svg/lock.svg'
+import eyeYellowIcon from './svg/eyeYellow.svg'
+import closeYellowIcon from './svg/closeYellow.svg'
+import scrollArrowIcon from './svg/scrollArrow.svg'
+import snackbarSwapIcon from './svg/snackbarSwap.svg'
+import circleDolarIcon from './svg/circleDolar.svg'
+import depositIcon from './svg/depositIcon.svg'
+import withdrawIcon from './svg/withdrawIcon.svg'
+import centerToRangeIcon from './svg/centerToRange.svg'
+import warning3 from './svg/warning3.svg'
+import connectWalletIcon from './svg/connectWalletIcon.svg'
 
-const icons: { [key: string]: string } = {
-  tokenCreator,
-  docsFill,
-  mediumFill,
-  githubFill,
-  telegramFill,
-  xFill,
-  discordFill,
-  closeModal,
-  statsIcon,
-  walletIcon,
-  liquidityIcon,
-  swapArrows,
-  clear: clearIcon,
-  LogoShort: logoShort,
-  LogoTitle: logoTitle,
-  ArrowIcon: arrow,
-  NoConnected: NoCon,
-  MainnetIcon: mainnetIcon,
-  DevnetIcon: devnetIcon,
-  TestnetIcon: testnetIcon,
-  GithubIcon: githubIcon,
-  TelegramIcon: telegramIcon,
-  DiscordIcon: discordIcon,
-  mediumIcon: mediumIcon,
-  closeIcon: closeIcon,
-  activeIcon: activeIcon,
-  inactiveIcon: inactiveIcon,
-  allIcon: allIcon,
-  closeSmallIcon: closeSmallIcon,
-  closeSmallGreenIcon: closeSmallGreenIcon,
-  docsIcon: docsIcon,
-  successIcon: successIcon,
-  XIcon: xIcon,
-  unknownToken: unknownToken,
-  newTab: newTab,
-  selectToken: selectToken,
-  copyAddress: copyAddress,
-  empty: emptyIcon,
-  plusIcon: plusIcon,
-  horizontalSwapIcon: horizontalSwapIcon,
-  swapListIcon: swapListIcon,
-  AlephZero: a0Logo,
-  Solana: solanaLogo,
-  Vara: varaLogo,
-  Alephium: alephiumLogo,
-  PhantomWallet: phantomWalletIcon,
-  SolflareWallet: solflareWalletIcon,
-  BackpackWallet: backpackWalletIcon,
-  NightlyConnect: nightlyConnect,
+export {
+  logoTitleIcon,
+  logoShortIcon,
+  arrowIcon,
+  noConnectedIcon,
+  githubIcon,
+  telegramIcon,
+  mediumIcon,
+  discordIcon,
+  closeIcon,
+  docsIcon,
+  closeSmallIcon,
+  closeSmallGreenIcon,
+  successIcon,
+  xIcon,
+  unknownTokenIcon,
+  newTabIcon,
+  selectTokenIcon,
+  copyAddressIcon,
+  emptyIcon,
+  plusIcon,
+  horizontalSwapIcon,
+  swapListIcon,
+  a0LogoIcon,
+  varaLogoIcon,
   warningIcon,
-  circleDiscord,
-  circleTelegram,
-  sonic,
-  cat1,
-  cat2,
-  dog1,
-  dog2,
-  emptyIcon: empty,
-  newTabBtn,
+  circleDiscordIcon,
+  circleTelegramIcon,
+  sonicIcon,
+  phantomWalletIcon,
+  solflareWalletIcon,
+  backpackWalletIcon,
+  nightlyConnectIcon,
+  emptyIconAlt,
+  newTabBtnIcon,
+  cat1Icon,
+  cat2Icon,
+  dog1Icon,
+  dog2Icon,
   lockIcon,
-  airdrop,
-  nightly,
-  airdropRainbow,
-  audit,
-  warning2,
-  closeWarning,
+  lockPositionIcon,
+  airdropIcon,
+  nightlyIcon,
+  airdropRainbowIcon,
+  auditIcon,
+  warning2Icon,
+  closeWarningIcon,
+  dropdownIcon,
+  dropdownReverseIcon,
+  arrowLeftIcon,
+  arrowRightIcon,
+  infoCircleIcon,
+  airdropGreyIcon,
+  infoErrorIcon,
+  okxLogoIcon,
   infoIcon,
-  infoIconPink,
-  arrowLeft,
-  arrowRight,
-  slider,
-  dropdown,
-  dropdownReverse,
-  infoCircle,
-  airdropGrey,
-  infoError,
-  okxLogo,
-  settings2,
-  mainnetGlow,
-  testnetGlow,
-  active2,
-  solanaGlow,
-  sonicGlow,
-  eclipseGlow,
-  alephiumGlow,
-  liquidityEmpty,
-  assetsEmpty,
-  settings3,
-  faucet,
-  goldenInfoCircle,
-  settingCirc
+  infoIconPinkIcon,
+  sliderIcon,
+  swapArrowsIcon,
+  liquidityIcon,
+  walletIcon,
+  statsIcon,
+  tokenCreatorIcon,
+  mainnetGlowIcon,
+  testnetGlowIcon,
+  active2Icon,
+  solanaGlowIcon,
+  sonicGlowIcon,
+  liquidityEmptyIcon,
+  assetsEmptyIcon,
+  settings3Icon,
+  faucetIcon,
+  closeYellowIcon,
+  searchIcon,
+  navRightIcon,
+  navLeftIcon,
+  checkIcon,
+  disconnectIcon,
+  refreshIcon,
+  backIcon,
+  settingIcon,
+  unlockIcon,
+  swapPositionIcon,
+  handleMaxIcon,
+  handleMinIcon,
+  zoomInIcon,
+  zoomOutIcon,
+  backArrowIcon,
+  lockIcon2,
+  eyeYellowIcon,
+  scrollArrowIcon,
+  goldenInfoIcon,
+  snackbarSwapIcon,
+  circleDolarIcon,
+  depositIcon,
+  withdrawIcon,
+  centerToRangeIcon,
+  warning3,
+  connectWalletIcon
 }
 
-export default icons
+export const chainIcons = {
+  eclipseGlow: eclipseGlowIcon,
+  sonicGlow: sonicGlowIcon,
+  solanaGlow: solanaGlowIcon
+}
+
+export const netowrkIcons = {
+  mainnetGlow: mainnetGlowIcon,
+  testnetGlow: testnetGlowIcon
+}
+
+export default {}

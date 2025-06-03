@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from '@mui/material'
 import useStyles from './style'
-import icons from '@static/icons'
+import { circleDiscordIcon, circleTelegramIcon, sonicIcon } from '@static/icons'
 import { social } from '@static/links'
 
 interface Props {
@@ -14,9 +14,9 @@ export const ThankYouModal: React.FC<Props> = ({ hideModal }) => {
       <Box className={classes.background}></Box>
       <Box className={classes.container}>
         <Box className={classes.gradient}>
-          <img className={classes.sonicIcon} src={icons.sonic} alt='Sonic icon' />
+          <img className={classes.sonicIcon} src={sonicIcon} alt='Sonic icon' />
 
-          <Box display='flex' flexDirection='column' alignItems='center' sx={{ gap: 2 }}>
+          <Box className={classes.subheaderWrapper}>
             <Typography className={classes.title}>Thank you</Typography>
             <Typography className={classes.lowerTitle}>
               for using Invariant Faucet on Sonic!
@@ -27,15 +27,15 @@ export const ThankYouModal: React.FC<Props> = ({ hideModal }) => {
             To stay updated, follow us on our social media.
           </Typography>
 
-          <Box display='flex' flexDirection='column' alignItems='center' sx={{ gap: 2 }}>
+          <Box className={classes.subheaderWrapper}>
             <Typography className={classes.lowerTitle}>Join us here!</Typography>
 
             <Box display='flex' sx={{ gap: 3 }}>
               <a href={social.discord} target='_blank'>
-                <img src={icons.circleDiscord} alt='Discord in circle icon' />
+                <img src={circleDiscordIcon} alt='Discord in circle icon' />
               </a>
               <a href={social.telegram} target='_blank'>
-                <img src={icons.circleTelegram} alt='Telegram in circle icon' />
+                <img src={circleTelegramIcon} alt='Telegram in circle icon' />
               </a>
             </Box>
             <Typography className={classes.description}>and don't forget to</Typography>

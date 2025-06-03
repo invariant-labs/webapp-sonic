@@ -1,20 +1,22 @@
-import LiquidationRangeInfo from '@components/PositionDetails/LiquidationRangeInfo/LiquidationRangeInfo'
-import PriceRangePlot, { TickPlotPositionData } from '@components/PriceRangePlot/PriceRangePlot'
-
-import { Card, Grid, Typography } from '@mui/material'
-import activeLiquidity from '@static/svg/activeLiquidity.svg'
+import PriceRangePlot, { TickPlotPositionData } from '@common/PriceRangePlot/PriceRangePlot'
+import { Box, Grid, Typography } from '@mui/material'
 import {
   calcPriceByTickIndex,
   calcTicksAmountInRange,
+  calculateConcentration,
+  formatNumberWithoutSuffix,
   numberToString,
-  spacingMultiplicityGte
+  spacingMultiplicityGte,
+  truncateString
 } from '@utils/utils'
 import { PlotTickData } from '@store/reducers/positions'
 import React, { useEffect, useState } from 'react'
-import { ILiquidityToken } from '../SinglePositionInfo/consts'
 import useStyles from './style'
-import { getMinTick } from '@invariant-labs/sdk-sonic/lib/utils'
-import { TooltipGradient } from '@components/TooltipHover/TooltipGradient'
+import { getMaxTick, getMinTick } from '@invariant-labs/sdk-sonic/lib/utils'
+import { Stat } from './Stat/Stat'
+import { RangeIndicator } from './RangeIndicator/RangeIndicator'
+import { ILiquidityToken } from '@store/consts/types'
+import { colors } from '@static/theme'
 
 export interface ISinglePositionPlot {
   data: PlotTickData[]
@@ -31,6 +33,12 @@ export interface ISinglePositionPlot {
   xToY: boolean
   hasTicksError?: boolean
   reloadHandler: () => void
+  isFullRange: boolean
+  usdcPrice: {
+    token: string
+    price?: number
+  } | null
+  positionId: string
 }
 
 const SinglePositionPlot: React.FC<ISinglePositionPlot> = ({
@@ -47,7 +55,10 @@ const SinglePositionPlot: React.FC<ISinglePositionPlot> = ({
   max,
   xToY,
   hasTicksError,
-  reloadHandler
+  reloadHandler,
+  isFullRange,
+  usdcPrice,
+  positionId
 }) => {
   const { classes } = useStyles()
 
@@ -70,6 +81,10 @@ const SinglePositionPlot: React.FC<ISinglePositionPlot> = ({
   const [zoomScale, setZoomScale] = useState(0.7)
 
   useEffect(() => {
+    if (!isInitialLoad) setIsInitialLoad(true)
+  }, [positionId])
+
+  useEffect(() => {
     const initSideDist = Math.abs(
       leftRange.x -
         calcPriceByTickIndex(
@@ -89,13 +104,16 @@ const SinglePositionPlot: React.FC<ISinglePositionPlot> = ({
 
       setPlotMax(plotMax)
       setPlotMin(plotMin)
+
       setCurrentXtoY(xToY)
     }
 
     if (isInitialLoad) {
+      const rangeDiff = Math.abs(rightRange.x - leftRange.x)
+
       setIsInitialLoad(false)
-      setPlotMin(leftRange.x - initSideDist)
-      setPlotMax(rightRange.x + initSideDist)
+      setPlotMin(leftRange.x - rangeDiff / 5)
+      setPlotMax(rightRange.x + rangeDiff / 5)
 
       setZoomScale(calcZoomScale(rightRange.x + initSideDist))
     }
@@ -136,96 +154,255 @@ const SinglePositionPlot: React.FC<ISinglePositionPlot> = ({
     }
   }
 
+  const moveLeft = () => {
+    const diff = plotMax - plotMin
+
+    const minPrice = xToY
+      ? calcPriceByTickIndex(
+          getMinTick(tickSpacing),
+          xToY,
+          Number(tokenX.decimal),
+          Number(tokenY.decimal)
+        )
+      : calcPriceByTickIndex(
+          getMaxTick(tickSpacing),
+          xToY,
+          Number(tokenX.decimal),
+          Number(tokenY.decimal)
+        )
+
+    const newLeft = plotMin - diff / 6
+    const newRight = plotMax - diff / 6
+
+    if (newLeft < minPrice - diff / 2) {
+      setPlotMin(minPrice - diff / 2)
+      setPlotMax(minPrice + diff / 2)
+    } else {
+      setPlotMin(newLeft)
+      setPlotMax(newRight)
+    }
+  }
+
+  const moveRight = () => {
+    const diff = plotMax - plotMin
+
+    const maxPrice = xToY
+      ? calcPriceByTickIndex(
+          getMaxTick(tickSpacing),
+          xToY,
+          Number(tokenX.decimal),
+          Number(tokenY.decimal)
+        )
+      : calcPriceByTickIndex(
+          getMinTick(tickSpacing),
+          xToY,
+          Number(tokenX.decimal),
+          Number(tokenY.decimal)
+        )
+
+    const newLeft = plotMin + diff / 6
+    const newRight = plotMax + diff / 6
+
+    if (newRight > maxPrice + diff / 2) {
+      setPlotMin(maxPrice - diff / 2)
+      setPlotMax(maxPrice + diff / 2)
+    } else {
+      setPlotMin(newLeft)
+      setPlotMax(newRight)
+    }
+  }
+
+  const centerChart = () => {
+    const diff = plotMax - plotMin
+
+    setPlotMin(midPrice.x - diff / 2)
+    setPlotMax(midPrice.x + diff / 2)
+  }
+
+  const centerToRange = () => {
+    const diff = plotMax - plotMin
+    const rangeCenter = (leftRange.x + rightRange.x) / 2
+
+    setPlotMin(rangeCenter - diff / 2)
+    setPlotMax(rangeCenter + diff / 2)
+  }
+
+  const minPercentage = (min / currentPrice - 1) * 100
+  const maxPercentage = (max / currentPrice - 1) * 100
+  const concentration = calculateConcentration(leftRange.index, rightRange.index)
+
   return (
-    <Grid item className={classes.root}>
-      <Grid className={classes.headerContainer} container justifyContent='space-between'>
-        <Typography className={classes.header}>Price range</Typography>
-        <Grid>
-          <TooltipGradient
-            title={
-              <>
-                <Typography className={classes.liquidityTitle}>Active liquidity</Typography>
-                <Typography className={classes.liquidityDesc} style={{ marginBottom: 12 }}>
-                  While selecting the price range, note where active liquidity is located. Your
-                  liquidity can be inactive and, as a consequence, not generate profits.
-                </Typography>
-                <Grid
-                  container
-                  direction='row'
-                  wrap='nowrap'
-                  alignItems='center'
-                  style={{ marginBottom: 12 }}>
-                  <Typography className={classes.liquidityDesc}>
-                    The active liquidity range is represented by white, dashed lines in the
-                    liquidity chart. Active liquidity is determined by the maximum price range
-                    resulting from the statistical volume of exchanges for the last 7 days.
-                  </Typography>
-                  <img className={classes.liquidityImg} src={activeLiquidity} alt='Liquidity' />
-                </Grid>
-                <Typography className={classes.liquidityNote}>
-                  Note: active liquidity borders are always aligned to the nearest initialized
-                  ticks.
-                </Typography>
-              </>
-            }
-            placement='bottom'
-            top={1}
-            noGradient>
-            <Typography className={classes.activeLiquidity}>
-              Active liquidity <span className={classes.activeLiquidityIcon}>i</span>
-            </Typography>
-          </TooltipGradient>
-          <Typography className={classes.currentPrice}>Current price ━━━</Typography>
-        </Grid>
-      </Grid>
-      <Grid className={classes.plotWrapper}>
-        <PriceRangePlot
-          data={data}
-          plotMin={plotMin}
-          plotMax={plotMax}
-          zoomMinus={zoomMinus}
-          zoomPlus={zoomPlus}
-          disabled
-          leftRange={leftRange}
-          rightRange={rightRange}
-          midPrice={midPrice}
-          className={classes.plot}
-          loading={ticksLoading}
-          isXtoY={xToY}
-          tickSpacing={tickSpacing}
-          xDecimal={tokenX.decimal}
-          yDecimal={tokenY.decimal}
-          coverOnLoading
-          hasError={hasTicksError}
-          reloadHandler={reloadHandler}
-        />
-      </Grid>
-      <Grid className={classes.minMaxInfo}>
-        <LiquidationRangeInfo
-          label='min'
-          amount={min}
-          tokenX={xToY ? tokenX.name : tokenY.name}
-          tokenY={xToY ? tokenY.name : tokenX.name}
-        />
-        <LiquidationRangeInfo
-          label='max'
-          amount={max}
-          tokenX={xToY ? tokenX.name : tokenY.name}
-          tokenY={xToY ? tokenY.name : tokenX.name}
-        />
-      </Grid>
-      <Grid className={classes.currentPriceContainer}>
-        <Card className={classes.currentPriceLabel}>
-          <Typography component='p'>current price</Typography>
-        </Card>
-        <Card className={classes.currentPriceAmonut}>
-          <Typography component='p'>
-            <Typography component='span'>{numberToString(currentPrice)}</Typography>
-            {xToY ? tokenY.name : tokenX.name} per {xToY ? tokenX.name : tokenY.name}
+    <Box className={classes.container}>
+      <Box className={classes.headerContainer}>
+        <Grid display='flex' flexDirection='column' justifyContent='flex-start'>
+          <Typography className={classes.header}>Price range</Typography>
+
+          <Typography className={classes.currentPrice} mt={1.5}>
+            {formatNumberWithoutSuffix(midPrice.x)} {tokenX.name} per {tokenY.name}
           </Typography>
-        </Card>
-      </Grid>
-    </Grid>
+          {usdcPrice !== null && usdcPrice.price ? (
+            <Typography className={classes.usdcCurrentPrice}>
+              {usdcPrice.token} ${formatNumberWithoutSuffix(usdcPrice.price)}
+            </Typography>
+          ) : (
+            <Box minHeight={20} />
+          )}
+        </Grid>
+        <Grid display='flex' flexDirection={'column'} gap={1}>
+          <RangeIndicator
+            isLoading={ticksLoading}
+            inRange={min <= currentPrice && currentPrice <= max}
+          />
+          <Grid container justifyContent='flex-end' alignItems='center'>
+            <Typography className={classes.currentPrice}>Current price</Typography>
+            <Typography className={classes.currentPrice} ml={0.5} mt={'3px'}>
+              ━━━
+            </Typography>
+          </Grid>
+        </Grid>
+      </Box>
+      <PriceRangePlot
+        plotData={data}
+        plotMinData={plotMin}
+        plotMaxData={plotMax}
+        zoomMinus={zoomMinus}
+        zoomPlus={zoomPlus}
+        moveLeft={moveLeft}
+        moveRight={moveRight}
+        centerChart={centerChart}
+        centerToRange={centerToRange}
+        disabled
+        leftRangeData={leftRange}
+        rightRangeData={rightRange}
+        midPriceData={midPrice}
+        className={classes.plot}
+        loading={ticksLoading}
+        isXtoY={xToY}
+        spacing={tickSpacing}
+        xDecimal={tokenX.decimal}
+        yDecimal={tokenY.decimal}
+        hasError={hasTicksError}
+        reloadHandler={reloadHandler}
+      />
+      <Box className={classes.statsWrapper}>
+        <Box className={classes.statsContainer}>
+          <Stat
+            name='CURRENT PRICE'
+            isLoading={ticksLoading}
+            value={
+              <Box>
+                <Typography component='span' className={classes.value}>
+                  {numberToString(currentPrice.toFixed(xToY ? tokenY.decimal : tokenX.decimal))}
+                </Typography>{' '}
+                {xToY ? truncateString(tokenY.name, 4) : truncateString(tokenX.name, 4)} {' / '}
+                {xToY ? truncateString(tokenX.name, 4) : truncateString(tokenY.name, 4)}
+              </Box>
+            }
+          />
+          <Stat
+            name={<Box className={classes.concentrationContainer}>CONCENTRATION</Box>}
+            value={
+              <Typography className={classes.concentrationValue}>
+                {concentration.toFixed(2)}x
+              </Typography>
+            }
+          />
+        </Box>
+        <Box className={classes.statsContainer}>
+          {isFullRange ? (
+            <Stat
+              value={
+                <Box>
+                  <Typography component='span' className={classes.value}>
+                    FULL RANGE
+                  </Typography>
+                </Box>
+              }
+              isHorizontal
+            />
+          ) : (
+            <>
+              <Stat
+                name='MIN'
+                value={
+                  <Box>
+                    <Typography component='span' className={classes.value}>
+                      {isFullRange ? 0 : formatNumberWithoutSuffix(min)}
+                    </Typography>{' '}
+                    {!isFullRange &&
+                      (xToY
+                        ? truncateString(tokenY.name, 4)
+                        : truncateString(tokenX.name, 4) + ' / ' + xToY
+                          ? truncateString(tokenX.name, 4)
+                          : truncateString(tokenY.name, 4))}
+                  </Box>
+                }
+                isHorizontal
+              />
+              <Stat
+                name='MAX'
+                value={
+                  <Box>
+                    <Typography component='span' className={classes.value}>
+                      {isFullRange ? (
+                        <span style={{ fontSize: '24px' }}>∞</span>
+                      ) : (
+                        formatNumberWithoutSuffix(max)
+                      )}
+                    </Typography>{' '}
+                    {!isFullRange &&
+                      (xToY
+                        ? truncateString(tokenY.name, 4)
+                        : truncateString(tokenX.name, 4) + ' / ' + xToY
+                          ? truncateString(tokenX.name, 4)
+                          : truncateString(tokenY.name, 4))}
+                  </Box>
+                }
+                isHorizontal
+              />
+            </>
+          )}
+        </Box>
+        <Box className={classes.statsContainer}>
+          <Stat
+            isLoading={ticksLoading}
+            name='% MIN'
+            value={
+              <Box>
+                <Typography
+                  component='span'
+                  className={classes.value}
+                  style={{
+                    color: minPercentage < 0 ? colors.invariant.Error : colors.invariant.green
+                  }}>
+                  {minPercentage > 0 && '+'}
+                  {minPercentage.toFixed(2)}%
+                </Typography>
+              </Box>
+            }
+            isHorizontal
+          />
+          <Stat
+            isLoading={ticksLoading}
+            name='% MAX'
+            value={
+              <Box>
+                <Typography
+                  component='span'
+                  className={classes.value}
+                  style={{
+                    color: maxPercentage < 0 ? colors.invariant.Error : colors.invariant.green
+                  }}>
+                  {maxPercentage > 0 && '+'}
+                  {maxPercentage.toFixed(2)}%
+                </Typography>
+              </Box>
+            }
+            isHorizontal
+          />
+        </Box>
+      </Box>
+    </Box>
   )
 }
 

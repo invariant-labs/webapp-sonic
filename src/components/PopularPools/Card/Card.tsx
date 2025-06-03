@@ -1,15 +1,13 @@
-import { Box, Button, Grid, Skeleton, Typography } from '@mui/material'
+import { Box, Grid, Skeleton, Typography } from '@mui/material'
 import { useStyles } from './style'
 import { PopularPoolData } from '@containers/PopularPoolsWrapper/PopularPoolsWrapper'
-import GradientBorder from '@components/GradientBorder/GradientBorder'
+import GradientBorder from '@common/GradientBorder/GradientBorder'
 import { colors } from '@static/theme'
 import cardBackgroundBottom from '@static/png/cardBackground1.png'
 import cardBackgroundTop from '@static/png/cardBackground2.png'
-import icons from '@static/icons'
-import RevertIcon from '@static/svg/revert.svg'
+import { backIcon, unknownTokenIcon, warningIcon } from '@static/icons'
 import { shortenAddress } from '@utils/uiUtils'
 import StatsLabel from './StatsLabel/StatsLabel'
-import backIcon from '@static/svg/back-arrow-2.svg'
 import {
   addressToTicker,
   calculateAPYAndAPR,
@@ -21,6 +19,8 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { NetworkType } from '@store/consts/static'
 import { DECIMAL } from '@invariant-labs/sdk-sonic/lib/utils'
+import { Button } from '@common/Button/Button'
+import { ReverseTokensIcon } from '@static/componentIcon/ReverseTokensIcon'
 
 export interface ICard extends PopularPoolData {
   isLoading: boolean
@@ -50,17 +50,16 @@ const Card: React.FC<ICard> = ({
   const { classes } = useStyles()
   const navigate = useNavigate()
 
+  const isXtoY = initialXtoY(addressFrom ?? '', addressTo ?? '')
+  const tokenA = isXtoY
+    ? addressToTicker(network, addressFrom ?? '')
+    : addressToTicker(network, addressTo ?? '')
+  const tokenB = isXtoY
+    ? addressToTicker(network, addressTo ?? '')
+    : addressToTicker(network, addressFrom ?? '')
+
   const handleOpenPosition = () => {
     if (fee === undefined) return
-
-    const isXtoY = initialXtoY(addressFrom ?? '', addressTo ?? '')
-
-    const tokenA = isXtoY
-      ? addressToTicker(network, addressFrom ?? '')
-      : addressToTicker(network, addressTo ?? '')
-    const tokenB = isXtoY
-      ? addressToTicker(network, addressTo ?? '')
-      : addressToTicker(network, addressFrom ?? '')
 
     navigate(
       ROUTES.getNewPositionRoute(
@@ -73,13 +72,7 @@ const Card: React.FC<ICard> = ({
   }
 
   const handleOpenSwap = () => {
-    navigate(
-      ROUTES.getExchangeRoute(
-        addressToTicker(network, addressFrom ?? ''),
-        addressToTicker(network, addressTo ?? '')
-      ),
-      { state: { referer: 'liquidity' } }
-    )
+    navigate(ROUTES.getExchangeRoute(tokenA, tokenB), { state: { referer: 'liquidity' } })
   }
 
   //HOTFIX
@@ -88,13 +81,7 @@ const Card: React.FC<ICard> = ({
   return (
     <Grid className={classes.root}>
       {isLoading ? (
-        <Skeleton
-          variant='rounded'
-          animation='wave'
-          width={220}
-          height={344}
-          style={{ opacity: 0.7, borderRadius: 24 }}
-        />
+        <Skeleton variant='rounded' animation='wave' className={classes.skeleton} />
       ) : (
         <Grid>
           <GradientBorder
@@ -114,7 +101,7 @@ const Card: React.FC<ICard> = ({
               className={classes.backgroundImage}
               style={{ bottom: 0, zIndex: -1 }}
             />
-            <Grid container p={'20px'} alignItems='center' flexDirection='column'>
+            <Grid container className={classes.cardWrapper}>
               <Grid container className={classes.iconsWrapper}>
                 <Box className={classes.iconContainer}>
                   <img
@@ -122,28 +109,28 @@ const Card: React.FC<ICard> = ({
                     src={iconFrom}
                     alt='Token from'
                     onError={e => {
-                      e.currentTarget.src = icons.unknownToken
+                      e.currentTarget.src = unknownTokenIcon
                     }}
                   />
-                  {isUnknownFrom && <img className={classes.warningIcon} src={icons.warningIcon} />}
+                  {isUnknownFrom && <img className={classes.warningIcon} src={warningIcon} />}
                 </Box>
-                <img className={classes.swapIcon} src={RevertIcon} alt='Token from' />
+                <ReverseTokensIcon className={classes.swapIcon} />
                 <Box className={classes.iconContainer}>
                   <img
                     className={classes.tokenIcon}
                     src={iconTo}
                     alt='Token to'
                     onError={e => {
-                      e.currentTarget.src = icons.unknownToken
+                      e.currentTarget.src = unknownTokenIcon
                     }}
                   />
-                  {isUnknownTo && <img className={classes.warningIcon} src={icons.warningIcon} />}
+                  {isUnknownTo && <img className={classes.warningIcon} src={warningIcon} />}
                 </Box>
               </Grid>
 
-              <Typography className={classes.symbolsContainer}>
+              <Box className={classes.symbolsContainer}>
                 {shortenAddress(symbolFrom ?? '')} - {shortenAddress(symbolTo ?? '')}{' '}
-              </Typography>
+              </Box>
               <Grid container gap='8px'>
                 {apy !== undefined && showAPY && (
                   <StatsLabel
@@ -159,17 +146,17 @@ const Card: React.FC<ICard> = ({
                   <StatsLabel title='Volume' value={`$${formatNumberWithSuffix(volume)}`} />
                 )}
               </Grid>
-              <Grid container justifyContent='space-between' alignItems='center' mt='auto'>
-                <Grid
-                  className={classes.back}
-                  container
-                  item
-                  alignItems='center'
-                  onClick={handleOpenSwap}>
+              <Grid container className={classes.footerWrapper}>
+                <Grid className={classes.back} container item onClick={handleOpenSwap}>
                   <img className={classes.backIcon} src={backIcon} alt='Back' />
                   <Typography className={classes.backText}>Swap</Typography>
                 </Grid>
-                <Button className={classes.button} variant='contained' onClick={handleOpenPosition}>
+                <Button
+                  scheme='pink'
+                  height={32}
+                  borderRadius={8}
+                  padding='0 25px'
+                  onClick={handleOpenPosition}>
                   Deposit
                 </Button>
               </Grid>

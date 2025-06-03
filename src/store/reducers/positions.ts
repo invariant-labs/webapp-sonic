@@ -12,7 +12,17 @@ import { PublicKey } from '@solana/web3.js'
 import { PayloadType } from '@store/consts/types'
 
 export type FetchTick = 'lower' | 'upper'
-export interface PositionWithAddress extends Position {
+
+export interface PositionWithTicks extends Position {
+  lowerTick: Tick
+  upperTick: Tick
+  ticksLoading: boolean
+}
+export interface PositionWithAddress extends PositionWithTicks {
+  address: PublicKey
+}
+
+export interface PositionWithoutTicks extends Position {
   address: PublicKey
 }
 export interface PositionsListStore {
@@ -44,28 +54,24 @@ export interface InitPositionStore {
   success: boolean
 }
 
-export interface CurrentPositionTicksStore {
-  lowerTick?: Tick
-  upperTick?: Tick
-  loading: boolean
-}
 export interface IPositionsStore {
   lastPage: number
   plotTicks: PlotTicks
   currentPoolIndex: number | null
   positionsList: PositionsListStore
   currentPositionId: string
-  currentPositionTicks: CurrentPositionTicksStore
   initPosition: InitPositionStore
   shouldNotUpdateRange: boolean
-  unclaimedFees: {
-    total: number
-    loading: boolean
-    lastUpdate: number
-  }
   prices: {
     data: Record<string, number>
   }
+  showFeesLoader: boolean
+  shouldDisable: boolean
+  positionData: {
+    position: PositionWithAddress | null
+    loading: boolean
+  }
+  positionListSwitcher: LiquidityPools
 }
 
 export interface InitPositionData
@@ -123,7 +129,20 @@ export interface ClosePositionData {
 
 export interface SetPositionData {
   index: number
+  isLocked: boolean
   position: Position
+  lowerTick: Tick
+  upperTick: Tick
+}
+
+export interface UpdatePositionRangeRicksData {
+  positionId: string
+  fetchTick?: FetchTick
+}
+
+export enum LiquidityPools {
+  Standard = 'Standard',
+  Locked = 'Locked'
 }
 
 export const defaultState: IPositionsStore = {
@@ -145,25 +164,21 @@ export const defaultState: IPositionsStore = {
     loading: true
   },
   currentPositionId: '',
-  currentPositionTicks: {
-    lowerTick: undefined,
-    upperTick: undefined,
-    loading: false
-  },
   initPosition: {
     inProgress: false,
     success: false
   },
-  unclaimedFees: {
-    total: 0,
-    loading: false,
-    lastUpdate: 0
-  },
   prices: {
     data: {}
   },
-
-  shouldNotUpdateRange: false
+  shouldDisable: false,
+  shouldNotUpdateRange: false,
+  showFeesLoader: false,
+  positionData: {
+    position: null,
+    loading: false
+  },
+  positionListSwitcher: LiquidityPools.Standard
 }
 
 export const positionsSliceName = 'positions'
@@ -213,24 +228,8 @@ const positionsSlice = createSlice({
     setAllClaimLoader(state, action: PayloadAction<boolean>) {
       state.positionsList.isAllClaimFeesLoading = action.payload
     },
-    calculateTotalUnclaimedFees(state) {
-      state.unclaimedFees.loading = true
-      return state
-    },
-    setUnclaimedFees(state, action: PayloadAction<number>) {
-      state.unclaimedFees = {
-        total: action.payload,
-        loading: false,
-        lastUpdate: Date.now()
-      }
-      return state
-    },
-    setUnclaimedFeesError(state) {
-      state.unclaimedFees = {
-        ...state.unclaimedFees,
-        loading: false
-      }
-      return state
+    setShouldDisable(state, action: PayloadAction<boolean>) {
+      state.shouldDisable = action.payload
     },
     setPrices(state, action: PayloadAction<Record<string, number>>) {
       state.prices = {
@@ -238,7 +237,6 @@ const positionsSlice = createSlice({
       }
       return state
     },
-
     getCurrentPlotTicks(state, action: PayloadAction<GetCurrentTicksData>) {
       state.currentPoolIndex = action.payload.poolIndex
       state.plotTicks.loading = !action.payload.disableLoading
@@ -252,6 +250,11 @@ const positionsSlice = createSlice({
       state.positionsList.loading = false
       return state
     },
+    setPosition(state, action: PayloadAction<PositionWithAddress | null>) {
+      state.positionData.position = action.payload
+      state.positionData.loading = false
+      return state
+    },
     setLockedPositionsList(state, action: PayloadAction<PositionWithAddress[]>) {
       state.positionsList.lockedList = action.payload
       return state
@@ -260,53 +263,45 @@ const positionsSlice = createSlice({
       state.positionsList.loading = true
       return state
     },
-    setPositionRangeTicks(
-      state,
-      action: PayloadAction<{ positionId: string; lowerTick: number; upperTick: number }>
-    ) {
-      state.positionsList.list.map(position => {
-        if (position.address.toString() === action.payload.positionId) {
-          position = {
-            ...position,
-            lowerTickIndex: action.payload.lowerTick,
-            upperTickIndex: action.payload.upperTick
-          }
-        }
-      })
+    getPreviewPosition(state, _action: PayloadAction<string>) {
+      state.positionData.loading = true
+      return state
     },
-    getSinglePosition(state, _action: PayloadAction<{ index: number; isLocked: boolean }>) {
+    getSinglePosition(state, action: PayloadAction<{ index: number; isLocked: boolean }>) {
+      const targetList = action.payload.isLocked
+        ? state.positionsList.lockedList
+        : state.positionsList.list
+
+      if (targetList[action.payload.index]) {
+        targetList[action.payload.index].ticksLoading = true
+      }
+
       return state
     },
     setSinglePosition(state, action: PayloadAction<SetPositionData>) {
-      state.positionsList.list[action.payload.index] = {
-        address: state.positionsList.list[action.payload.index].address,
-        ...action.payload.position
-      }
-      return state
-    },
-    getCurrentPositionRangeTicks(
-      state,
-      _action: PayloadAction<{ id: string; fetchTick?: FetchTick }>
-    ) {
-      state.currentPositionTicks.loading = true
-      return state
-    },
-    setCurrentPositionRangeTicks(
-      state,
-      action: PayloadAction<{ lowerTick?: Tick; upperTick?: Tick }>
-    ) {
-      state.currentPositionTicks = {
-        lowerTick: action.payload.lowerTick
-          ? action.payload.lowerTick
-          : state.currentPositionTicks.lowerTick,
-        upperTick: action.payload.upperTick
-          ? action.payload.upperTick
-          : state.currentPositionTicks.upperTick,
-        loading: false
-      }
+      action.payload.isLocked
+        ? (state.positionsList.lockedList[action.payload.index] = {
+            address: state.positionsList.lockedList[action.payload.index].address,
+            lowerTick: action.payload.lowerTick,
+            upperTick: action.payload.upperTick,
+            ticksLoading: false,
+            ...action.payload.position
+          })
+        : (state.positionsList.list[action.payload.index] = {
+            address: state.positionsList.list[action.payload.index].address,
+            lowerTick: action.payload.lowerTick,
+            upperTick: action.payload.upperTick,
+            ticksLoading: false,
+            ...action.payload.position
+          })
       return state
     },
     claimFee(state, _action: PayloadAction<{ index: number; isLocked: boolean }>) {
+      state.showFeesLoader = true
+      return state
+    },
+    setFeesLoader(state, action: PayloadAction<boolean>) {
+      state.showFeesLoader = action.payload
       return state
     },
     claimAllFee(state) {
@@ -315,9 +310,8 @@ const positionsSlice = createSlice({
     closePosition(state, _action: PayloadAction<ClosePositionData>) {
       return state
     },
-    resetState(state) {
-      state = defaultState
-      return state
+    resetState() {
+      return defaultState
     },
     setShouldNotUpdateRange(state, action: PayloadAction<boolean>) {
       state.shouldNotUpdateRange = action.payload
@@ -325,6 +319,10 @@ const positionsSlice = createSlice({
     },
     setCurrentPositionId(state, action: PayloadAction<string>) {
       state.currentPositionId = action.payload
+      return state
+    },
+    setPositionListSwitcher(state, action: PayloadAction<LiquidityPools>) {
+      state.positionListSwitcher = action.payload
       return state
     }
   }

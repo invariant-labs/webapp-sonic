@@ -1,4 +1,4 @@
-import { ProgressState } from '@components/AnimatedButton/AnimatedButton'
+import { ProgressState } from '@common/AnimatedButton/AnimatedButton'
 import { Swap } from '@components/Swap/Swap'
 import {
   commonTokensForNetworks,
@@ -18,16 +18,16 @@ import {
   nearestPoolTicksForPair,
   isLoadingPathTokens
 } from '@store/selectors/pools'
-import { network, timeoutError } from '@store/selectors/solanaConnection'
+import { network, rpcAddress, timeoutError } from '@store/selectors/solanaConnection'
 import {
   status,
   swapTokens,
   swapTokensDict,
   balanceLoading,
   balance,
-  accounts
+  accounts as solanaAccounts
 } from '@store/selectors/solanaWallet'
-import { swap as swapPool } from '@store/selectors/swap'
+import { swap as swapPool, accounts, isLoading } from '@store/selectors/swap'
 import { PublicKey } from '@solana/web3.js'
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -38,11 +38,16 @@ import {
   getNewTokenOrThrow,
   tickerToAddress
 } from '@utils/utils'
+
 import { TokenPriceData } from '@store/consts/types'
 import { getCurrentSolanaConnection } from '@utils/web3/connection'
 import { VariantType } from 'notistack'
 import { BN } from '@coral-xyz/anchor'
 import { useLocation } from 'react-router-dom'
+import { getMarketProgramSync } from '@utils/web3/programs/amm'
+import { getSolanaWallet } from '@utils/web3/wallet'
+import { IWallet } from '@invariant-labs/sdk-sonic'
+import { actions as swapActions } from '@store/reducers/swap'
 
 type Props = {
   initialTokenFrom: string
@@ -73,6 +78,9 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
   const isPathTokensLoading = useSelector(isLoadingPathTokens)
   const { state } = useLocation()
   const [block, setBlock] = useState(state?.referer === 'stats')
+  const rpc = useSelector(rpcAddress)
+  const wallet = getSolanaWallet()
+  const market = getMarketProgramSync(networkType, rpc, wallet as IWallet)
 
   useEffect(() => {
     let timeoutId1: NodeJS.Timeout
@@ -108,13 +116,13 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
   }, [isFetchingNewPool])
 
   const lastTokenFrom =
-    tickerToAddress(networkType, initialTokenFrom) && initialTokenFrom !== '-'
+    initialTokenFrom && tickerToAddress(networkType, initialTokenFrom)
       ? tickerToAddress(networkType, initialTokenFrom)
       : localStorage.getItem(`INVARIANT_LAST_TOKEN_FROM_${networkType}`) ??
         WSOL_MAIN.address.toString()
 
   const lastTokenTo =
-    tickerToAddress(networkType, initialTokenTo) && initialTokenTo !== '-'
+    initialTokenTo && tickerToAddress(networkType, initialTokenTo)
       ? tickerToAddress(networkType, initialTokenTo)
       : localStorage.getItem(`INVARIANT_LAST_TOKEN_TO_${networkType}`)
 
@@ -279,6 +287,14 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
         second: tokensList[tokenToIndex].address
       })
     )
+
+    dispatch(
+      swapActions.getTwoHopSwapData({
+        tokenFrom: tokensList[tokenFromIndex].address,
+        tokenTo: tokensList[tokenToIndex].address
+      })
+    )
+
     dispatch(
       poolsActions.getNearestTicksForPair({
         tokenFrom: tokensList[tokenFromIndex].address,
@@ -298,7 +314,7 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
     )
   }
 
-  const allAccounts = useSelector(accounts)
+  const allAccounts = useSelector(solanaAccounts)
 
   const wrappedSOLAccountExist = useMemo(() => {
     let wrappedSOLAccountExist = false
@@ -316,6 +332,20 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
     dispatch(walletActions.unwrapWSOL())
   }
 
+  useEffect(() => {
+    if (tokenFrom && tokenTo) {
+      dispatch(
+        swapActions.getTwoHopSwapData({
+          tokenFrom,
+          tokenTo
+        })
+      )
+    }
+  }, [tokenFrom, tokenTo])
+
+  const swapAccounts = useSelector(accounts)
+  const swapIsLoading = useSelector(isLoading)
+
   return (
     <Swap
       isFetchingNewPool={isFetchingNewPool}
@@ -324,8 +354,10 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
         slippage,
         estimatedPriceAfterSwap,
         tokenFrom,
+        tokenBetween,
         tokenTo,
-        poolIndex,
+        firstPair,
+        secondPair,
         amountIn,
         amountOut,
         byAmountIn
@@ -335,8 +367,10 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
           actions.swap({
             slippage,
             estimatedPriceAfterSwap,
-            poolIndex,
+            firstPair,
+            secondPair,
             tokenFrom,
+            tokenBetween,
             tokenTo,
             amountIn,
             amountOut,
@@ -401,6 +435,10 @@ export const WrappedSwap = ({ initialTokenFrom, initialTokenTo }: Props) => {
         dispatch(connectionActions.setTimeoutError(false))
       }}
       canNavigate={canNavigate}
+      market={market}
+      tokensDict={tokensDict}
+      swapAccounts={swapAccounts}
+      swapIsLoading={swapIsLoading}
     />
   )
 }

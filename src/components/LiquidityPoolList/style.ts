@@ -1,26 +1,21 @@
 import { alpha } from '@mui/material'
-import { colors, theme } from '@static/theme'
+import { colors } from '@static/theme'
 import { makeStyles } from 'tss-react/mui'
 
-export const useStyles = makeStyles()(() => ({
+export const useStyles = makeStyles()(_theme => ({
   container: {
-    maxWidth: 1072,
-    borderRadius: '24px'
+    flexDirection: 'column',
+    maxWidth: 1210,
+    flexWrap: 'nowrap',
+    position: 'relative',
+    overflow: 'hidden'
   },
   pagination: {
-    height: 90,
-    borderTop: `1px solid ${colors.invariant.light}`,
-
-    padding: '20px 24px 10px 0',
     maxWidth: '100%',
     backgroundColor: colors.invariant.component,
     borderBottomLeftRadius: '24px',
-    borderBottomRightRadius: '24px',
-    [theme.breakpoints.down('lg')]: {
-      padding: '20px 12px'
-    }
+    borderBottomRightRadius: '24px'
   },
-
   loadingOverlay: {
     position: 'relative',
     '&::after': {
@@ -38,8 +33,10 @@ export const useStyles = makeStyles()(() => ({
     height: 69,
     background: colors.invariant.component
   },
-  emptyRowBorder: {
-    height: 68,
-    borderBottom: `1px solid ${colors.invariant.light}`
+
+  emptyWrapper: {
+    background: colors.invariant.component,
+    borderBottom: `2px solid ${colors.invariant.light}`,
+    boxSizing: 'border-box'
   }
 }))

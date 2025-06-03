@@ -5,7 +5,6 @@ export const useStyles = makeStyles()(() => ({
   root: { width: '226px' },
   container: {
     position: 'relative',
-    height: 340,
     borderRadius: '24px',
     overflow: 'hidden'
   },
@@ -17,14 +16,19 @@ export const useStyles = makeStyles()(() => ({
     display: 'flex',
     alignItems: 'center'
   },
-
+  skeleton: {
+    width: '220px',
+    height: '344px',
+    opacity: 0.7,
+    borderRadius: 24
+  },
   iconsWrapper: {
     display: 'flex',
     justifyContent: 'center',
     height: 36,
     marginBottom: '16px'
   },
-  swapIcon: { height: 15, margin: '10.5px 6px' },
+  swapIcon: { height: 15, margin: '10.5px 6px', color: colors.invariant.text },
   iconContainer: {
     minWidth: 36,
     maxWidth: 36,
@@ -45,9 +49,9 @@ export const useStyles = makeStyles()(() => ({
     right: -6
   },
   symbolsContainer: {
+    position: 'relative',
     color: colors.invariant.text,
     display: 'flex',
-    overflow: 'hidden',
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
     ...typography.heading4,
@@ -80,6 +84,7 @@ export const useStyles = makeStyles()(() => ({
     }
   },
   back: {
+    alignItems: 'center',
     width: 'fit-content',
     transition: 'filter 300ms',
     padding: '6px',
@@ -123,5 +128,16 @@ export const useStyles = makeStyles()(() => ({
         boxShadow: 'none'
       }
     }
+  },
+  cardWrapper: {
+    padding: '20px',
+    alignItems: 'center',
+    flexDirection: 'column'
+  },
+  footerWrapper: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    flexWrap: 'nowrap'
   }
 }))

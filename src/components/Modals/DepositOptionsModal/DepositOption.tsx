@@ -1,8 +1,7 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import useStyles from './style'
 import { Box, Button, Divider, Grid, Input, Tooltip, Typography } from '@mui/material'
-import classNames from 'classnames'
-import icons from '@static/icons'
+import { goldenInfoIcon, infoIcon } from '@static/icons'
 
 interface Props {
   value: string
@@ -33,7 +32,7 @@ const DepositOption: React.FC<Props> = ({
   lowerValueTreshHold,
   divider
 }) => {
-  const { classes } = useStyles()
+  const { classes, cx } = useStyles()
   const inputRef = useRef<HTMLInputElement>(null)
   const [temp, setTemp] = useState<string>(valueIndex === -1 ? value : '')
   const allowOnlyDigitsAndTrimUnnecessaryZeros: React.ChangeEventHandler<
@@ -89,7 +88,9 @@ const DepositOption: React.FC<Props> = ({
       }
     }
   }
-
+  useEffect(() => {
+    if (valueIndex !== -1 && temp !== '') setTemp('')
+  }, [value, valueIndex])
   return (
     <>
       {divider && <Divider className={classes.divider} />}
@@ -97,7 +98,7 @@ const DepositOption: React.FC<Props> = ({
       <Grid container className={classes.defaultOptionsContainer}>
         {options.map((tier, index) => (
           <Button
-            className={classNames(
+            className={cx(
               classes.slippagePercentageButton,
               valueIndex === index && classes.slippagePercentageButtonActive
             )}
@@ -112,11 +113,7 @@ const DepositOption: React.FC<Props> = ({
               <Tooltip
                 title={
                   <Box className={classes.singleOptionTooltipContainer}>
-                    <img
-                      src={icons.goldenInfoCircle}
-                      alt=''
-                      className={classes.singleOptionTooltipIcon}
-                    />
+                    <img src={goldenInfoIcon} alt='' className={classes.singleOptionTooltipIcon} />
                     <Box className={classes.singleOptionMessageContainer}>{tier.message}</Box>
                   </Box>
                 }
@@ -125,9 +122,9 @@ const DepositOption: React.FC<Props> = ({
                   {tier.label}
                   {tier.message !== '' ? (
                     <img
-                      src={icons.infoCircle}
+                      src={infoIcon}
                       alt=''
-                      className={classNames(classes.grayscaleIcon, classes.labelInfoItem)}
+                      className={cx(classes.grayscaleIcon, classes.labelInfoItem)}
                     />
                   ) : null}
                 </Typography>
@@ -139,10 +136,7 @@ const DepositOption: React.FC<Props> = ({
       <Input
         disableUnderline
         placeholder='0.00'
-        className={classNames(
-          classes.detailsInfoForm,
-          valueIndex === -1 && classes.customSlippageActive
-        )}
+        className={cx(classes.detailsInfoForm, valueIndex === -1 && classes.customSlippageActive)}
         type={'text'}
         value={temp}
         onChange={e => {
@@ -170,7 +164,7 @@ const DepositOption: React.FC<Props> = ({
         }}
       />
 
-      <Typography className={classNames(classes.info, classes.detailsInfoTextContainer)}>
+      <Typography className={cx(classes.info, classes.detailsInfoTextContainer)}>
         {description}
       </Typography>
     </>

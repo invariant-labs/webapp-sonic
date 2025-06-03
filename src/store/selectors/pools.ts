@@ -43,7 +43,6 @@ export const {
 export const poolsArraySortedByFees = createSelector(pools, allPools =>
   Object.values(allPools).sort((a, b) => a.fee.sub(b.fee).toNumber())
 )
-
 export const autoSwapTicksAndTickMap = createSelector(
   autoSwapTicks,
   autoSwapTickMap,
@@ -51,7 +50,6 @@ export const autoSwapTicksAndTickMap = createSelector(
     return { ticks, tickmap }
   }
 )
-
 export const hasTokens = createSelector(tokens, allTokens => !!Object.values(allTokens).length)
 
 export const poolsSelectors = {

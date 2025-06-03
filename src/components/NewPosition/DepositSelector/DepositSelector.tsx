@@ -1,4 +1,4 @@
-import AnimatedButton, { ProgressState } from '@components/AnimatedButton/AnimatedButton'
+import AnimatedButton, { ProgressState } from '@common/AnimatedButton/AnimatedButton'
 import DepositAmountInput from '@components/Inputs/DepositAmountInput/DepositAmountInput'
 import Select from '@components/Inputs/Select/Select'
 import {
@@ -6,15 +6,16 @@ import {
   Button,
   Checkbox,
   Grid,
+  Skeleton,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
   Typography,
   useMediaQuery
 } from '@mui/material'
-import SwapList from '@static/svg/swap-list.svg'
 import {
   ALL_FEE_TIERS_DATA,
+  AutoswapCustomError,
   DepositOptions,
   MINIMUM_PRICE_IMPACT,
   NetworkType,
@@ -26,13 +27,12 @@ import {
   WSOL_SWAP_AND_POSITION_INIT_LAMPORTS_TEST,
   WRAPPED_SOL_ADDRESS
 } from '@store/consts/static'
-import classNames from 'classnames'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import FeeSwitch from '../FeeSwitch/FeeSwitch'
 import { useStyles } from './style'
 import { PositionOpeningMethod } from '@store/consts/types'
 import { SwapToken } from '@store/selectors/solanaWallet'
-import { TooltipHover } from '@components/TooltipHover/TooltipHover'
+import { TooltipHover } from '@common/TooltipHover/TooltipHover'
 import ChangeWalletButton from '@components/Header/HeaderButton/ChangeWalletButton'
 import { PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
@@ -48,17 +48,18 @@ import {
   simulateAutoSwapOnTheSamePool
 } from '@utils/utils'
 import { blurContent, createButtonActions, unblurContent } from '@utils/uiUtils'
-import icons from '@static/icons'
+import { infoIcon, settingIcon, swapListIcon } from '@static/icons'
 import { PoolWithAddress } from '@store/reducers/pools'
 import { Tick, Tickmap } from '@invariant-labs/sdk-sonic/lib/market'
 import {
   DECIMAL,
   SimulateSwapAndCreatePositionSimulation,
-  SimulationStatus,
+  SwapAndCreateSimulationStatus,
   toDecimal
 } from '@invariant-labs/sdk-sonic/lib/utils'
 import DepoSitOptionsModal from '@components/Modals/DepositOptionsModal/DepositOptionsModal'
 import { theme } from '@static/theme'
+import loadingAnimation from '@static/gif/loading.gif'
 
 export interface InputState {
   value: string
@@ -100,7 +101,6 @@ export interface IDepositSelector {
   priceB?: number
   onReverseTokens: () => void
   poolIndex: number | null
-  bestTierIndex?: number
   handleAddToken: (address: string) => void
   commonTokens: PublicKey[]
   initialHideUnknownTokensValue: boolean
@@ -126,6 +126,9 @@ export interface IDepositSelector {
   setTokenBIndex: (index: number | null) => void
   canNavigate: boolean
   isCurrentPoolExisting: boolean
+  feeTiersWithTvl: Record<number, number>
+  totalTvl: number
+  isLoadingStats: boolean
   isAutoSwapAvailable: boolean
   isAutoSwapOnTheSamePool: boolean
   autoSwapPoolData: PoolWithAddress | null
@@ -134,7 +137,7 @@ export interface IDepositSelector {
   simulationParams: {
     lowerTickIndex: number
     upperTickIndex: number
-    actualPoolPrice: BN | null
+    price: BN
   }
   initialMaxPriceImpact: string
   onMaxPriceImpactChange: (val: string) => void
@@ -169,7 +172,6 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
   priceB,
   onReverseTokens,
   poolIndex,
-  bestTierIndex,
   handleAddToken,
   commonTokens,
   initialHideUnknownTokensValue,
@@ -191,6 +193,9 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
   solBalance,
   canNavigate,
   isCurrentPoolExisting,
+  feeTiersWithTvl,
+  totalTvl,
+  isLoadingStats,
   isAutoSwapAvailable,
   autoSwapPoolData,
   autoSwapTickmap,
@@ -214,13 +219,15 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
   setAlignment,
   updateLiquidity
 }) => {
-  const { classes } = useStyles()
+  const { classes, cx } = useStyles()
   const breakpoint630Down = useMediaQuery(theme.breakpoints.down(630))
   const brekpoint1270to1350 = useMediaQuery(theme.breakpoints.between(1270, 1350))
   const breakpointMdTo1000 = useMediaQuery(theme.breakpoints.between('md', 1000))
   const { value: valueA } = tokenAInputState
   const { value: valueB } = tokenBInputState
   const [priceImpact, setPriceImpact] = useState<string>(initialMaxPriceImpact)
+  const [isSimulating, setIsSimulating] = useState<boolean>(false)
+  const [autoswapCustomError, setAutoswapCustomError] = useState<AutoswapCustomError | null>(null)
   const [utilization, setUtilization] = useState<string>(initialMinUtilization)
   const [slippageToleranceSwap, setSlippageToleranceSwap] = useState<string>(
     initialMaxSlippageToleranceSwap
@@ -231,19 +238,22 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
 
   const [tokenAIndex, setTokenAIndex] = useState<number | null>(null)
   const [tokenBIndex, setTokenBIndex] = useState<number | null>(null)
+  const [throttle, setThrottle] = useState<boolean>(false)
 
   const [simulation, setSimulation] = useState<SimulateSwapAndCreatePositionSimulation | null>(null)
 
   const [settings, setSettings] = useState<boolean>(false)
 
+  const isAutoswapOn = useMemo(() => alignment === DepositOptions.Auto, [alignment])
+
   const WSOL_MIN_FEE_LAMPORTS = useMemo(() => {
     if (network === NetworkType.Testnet) {
-      if (alignment === DepositOptions.Auto) {
+      if (isAutoswapOn) {
         return WSOL_SWAP_AND_POSITION_INIT_LAMPORTS_TEST
       }
       return isCurrentPoolExisting ? WSOL_POSITION_INIT_LAMPORTS_TEST : WSOL_POOL_INIT_LAMPORTS_TEST
     } else {
-      if (alignment === DepositOptions.Auto) {
+      if (isAutoswapOn) {
         return WSOL_SWAP_AND_POSITION_INIT_LAMPORTS_MAIN
       }
       return isCurrentPoolExisting ? WSOL_POSITION_INIT_LAMPORTS_MAIN : WSOL_POOL_INIT_LAMPORTS_MAIN
@@ -302,6 +312,14 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
   const [wasRunTokenA, setWasRunTokenA] = useState(false)
   const [wasRunTokenB, setWasRunTokenB] = useState(false)
 
+  const isPriceImpact = useMemo(
+    () =>
+      simulation &&
+      simulation.swapSimulation &&
+      simulation.swapSimulation.priceImpact.gt(toDecimal(+Number(priceImpact).toFixed(4), 2)),
+    [simulation, priceImpact]
+  )
+
   useEffect(() => {
     if (canNavigate) {
       const tokenAIndex = tokens.findIndex(
@@ -323,9 +341,10 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
   }, [wasRunTokenA, wasRunTokenB, canNavigate, tokens.length])
 
   const getButtonMessage = useCallback(() => {
-    if (isLoadingTicksOrTickmap) {
-      return 'Loading data...'
+    if (isLoadingTicksOrTickmap || throttle || isSimulating) {
+      return 'Loading'
     }
+
     if (tokenAIndex === null || tokenBIndex === null) {
       return 'Select tokens'
     }
@@ -334,33 +353,46 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
       return 'Select different tokens'
     }
 
-    if (alignment === DepositOptions.Auto && isError(SimulationStatus.NoGainSwap)) {
-      return 'Insufficient Amount'
+    if (isAutoswapOn && autoswapCustomError === AutoswapCustomError.FetchError) {
+      return 'Fetch error'
     }
 
     if (
-      alignment === DepositOptions.Auto &&
-      (isError(SimulationStatus.SwapStepLimitReached) ||
-        isError(SimulationStatus.PriceLimitReached) ||
-        isError(SimulationStatus.LimitReached))
+      isAutoswapOn &&
+      (isSimulationStatus(SwapAndCreateSimulationStatus.TickAccountMissing) ||
+        isSimulationStatus(SwapAndCreateSimulationStatus.InvalidSimulationParamsError))
     ) {
+      return 'Invalid parameters'
+    }
+
+    if (
+      isAutoswapOn &&
+      (isSimulationStatus(SwapAndCreateSimulationStatus.SwapNotFound) ||
+        isSimulationStatus(SwapAndCreateSimulationStatus.InputAmountTooLow))
+    ) {
+      return 'Token amounts are too low'
+    }
+
+    if (isAutoswapOn && isSimulationStatus(SwapAndCreateSimulationStatus.LiquidityTooLow)) {
       return 'Insufficient Liquidity'
     }
 
-    if (
-      alignment === DepositOptions.Auto &&
-      simulation &&
-      simulation.swapSimulation &&
-      new BN(simulation.swapSimulation.priceImpact).gt(
-        toDecimal(+Number(priceImpact).toFixed(4), 2)
-      )
-    ) {
+    if (isAutoswapOn && isPriceImpact) {
       return 'Price impact reached'
     }
 
-    if (isAutoSwapAvailable && !tokenACheckbox && !tokenBCheckbox) {
+    if (isAutoswapOn && isSimulationStatus(SwapAndCreateSimulationStatus.PriceLimitReached)) {
+      return 'Price limit reached'
+    }
+
+    if (isAutoswapOn && isSimulationStatus(SwapAndCreateSimulationStatus.UtilizationTooLow)) {
+      return 'Minimal utilization not reached'
+    }
+
+    if (isAutoswapOn && !tokenACheckbox && !tokenBCheckbox) {
       return 'At least one checkbox needs to be marked'
     }
+
     if (positionOpeningMethod === 'concentration' && concentrationIndex < minimumSliderIndex) {
       return concentrationArray[minimumSliderIndex]
         ? `Set concentration to at least ${concentrationArray[minimumSliderIndex].toFixed(0)}x`
@@ -407,9 +439,24 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
     }
 
     if (
-      ((!tokenAInputState.blocked && +tokenAInputState.value === 0) ||
-        (!tokenBInputState.blocked && +tokenBInputState.value === 0)) &&
-      alignment === DepositOptions.Basic
+      ((tokenAInputState.blocked && !tokenBInputState.blocked) ||
+        (!tokenAInputState.blocked && tokenBInputState.blocked)) &&
+      isAutoswapOn
+    ) {
+      if (
+        (tokenAInputState.blocked && +tokenBInputState.value === 0) ||
+        (tokenBInputState.blocked && +tokenAInputState.value === 0)
+      ) {
+        return 'Enter token amount'
+      }
+    }
+
+    if (
+      !tokenAInputState.blocked &&
+      +tokenAInputState.value === 0 &&
+      !tokenBInputState.blocked &&
+      +tokenBInputState.value === 0 &&
+      !isAutoswapOn
     ) {
       return !tokenAInputState.blocked &&
         !tokenBInputState.blocked &&
@@ -424,13 +471,9 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
       +tokenAInputState.value === 0 &&
       !tokenBInputState.blocked &&
       +tokenBInputState.value === 0 &&
-      alignment === DepositOptions.Auto
+      isAutoswapOn
     ) {
       return 'Enter token amount'
-    }
-
-    if (alignment === DepositOptions.Auto && !simulation) {
-      return 'Simulation error'
     }
 
     return 'Add Position'
@@ -503,7 +546,7 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
       return
     }
 
-    if (alignment === DepositOptions.Auto) {
+    if (isAutoswapOn) {
       const pom = tokenAInputState.value
       tokenAInputState.setValue(tokenBInputState.value)
       tokenBInputState.setValue(pom)
@@ -531,8 +574,6 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
     if (newAlignment !== null) {
       if (newAlignment === DepositOptions.Basic) {
         setSimulation(null)
-        setTokenACheckbox(true)
-        setTokenBCheckbox(true)
       }
       setAlignment(newAlignment)
     }
@@ -551,27 +592,21 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
     onAmountSet: tokenBInputState.setValue
   })
 
-  const isError = useCallback(
-    (value: SimulationStatus) => {
-      return simulation && simulation.swapSimulation && simulation.swapSimulation.status === value
+  const isSimulationStatus = useCallback(
+    (value: SwapAndCreateSimulationStatus) => {
+      return simulation && simulation.status === value
     },
     [simulation]
   )
+
   const renderSwitcher = useCallback(
     () => (
       <>
-        <Tooltip
-          title={
-            'AutoSwap automatically adjusts tokens balances to match your chosen ratio, saving time and optimizing transactions. By default, it executes the most optimal swap, while the manual mode allows you to set parameters such as max price impact or minimum utilization.'
-          }
-          classes={{ tooltip: classes.tooltip }}>
-          <img src={icons.infoCircle} alt='' width={'12px'} height={'12px'} />
-        </Tooltip>
         <Box className={classes.switchDepositTypeContainer}>
           <Box
             className={classes.switchDepositTypeMarker}
             sx={{
-              left: alignment === DepositOptions.Basic ? 0 : '50%'
+              left: !isAutoswapOn ? 0 : '50%'
             }}
           />
           <ToggleButtonGroup
@@ -582,11 +617,9 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
             <ToggleButton
               value={DepositOptions.Basic}
               disableRipple
-              className={classNames(
+              className={cx(
                 classes.switchDepositTypeButton,
-                alignment === DepositOptions.Basic
-                  ? classes.switchSelected
-                  : classes.switchNotSelected
+                !isAutoswapOn ? classes.switchSelected : classes.switchNotSelected
               )}>
               Basic
             </ToggleButton>
@@ -594,42 +627,71 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
               disabled={!isAutoSwapAvailable}
               value={DepositOptions.Auto}
               disableRipple
-              className={classNames(
+              className={cx(
                 classes.switchDepositTypeButton,
-                alignment === DepositOptions.Auto
-                  ? classes.switchSelected
-                  : classes.switchNotSelected
+                classes.autoButton,
+                isAutoswapOn ? classes.switchSelected : classes.switchNotSelected
               )}>
-              Auto
+              <span className={classes.autoText}>Auto</span>
+              <Tooltip
+                title={
+                  'AutoSwap allows you to create a position using any token ratio. Simply choose the amount you currently hold in your wallet, and it will be automatically swapped in the most optimal way.'
+                }
+                classes={{ tooltip: classes.tooltip }}>
+                <span className={classes.tooltipIconWrapper}>
+                  <img src={infoIcon} alt='' width={'12px'} height={'12px'} />
+                </span>
+              </Tooltip>
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
-        <Button
-          onClick={handleClickDepositOptions}
-          className={classes.optionsIconBtn}
-          disableRipple
-          disabled={!isAutoSwapAvailable}>
-          <img
-            src={icons.settingCirc}
-            className={!isAutoSwapAvailable ? classes.grayscaleIcon : classes.whiteIcon}
-            alt='options'
-          />
-        </Button>
+        <Tooltip
+          title={
+            !isAutoswapOn
+              ? 'Autoswap related settings, accesable only when autoswap is turned on.'
+              : ''
+          }
+          classes={{ tooltip: classes.tooltip }}>
+          <div>
+            <Button
+              onClick={handleClickDepositOptions}
+              className={classes.optionsIconBtn}
+              disableRipple
+              disabled={!isAutoswapOn}>
+              <img
+                src={settingIcon}
+                className={!isAutoswapOn ? classes.grayscaleIcon : classes.whiteIcon}
+                alt='options'
+              />
+            </Button>
+          </div>
+        </Tooltip>
       </>
     ),
     [isAutoSwapAvailable, alignment]
   )
 
-  const renderPriceImpactWarning = useCallback(
-    () =>
-      (!simulation?.swapSimulation && !simulation?.position?.liquidity.eqn(0)) ||
-      !simulation?.swapSimulation?.priceImpact ? (
+  const renderWarning = useCallback(() => {
+    if (isSimulating || throttle) {
+      return (
+        <Box position='relative'>
+          <Skeleton variant='rectangular' className={classes.skeleton}></Skeleton>
+          <img src={loadingAnimation} alt='Loader' className={classes.loadingAnimation} />
+        </Box>
+      )
+    }
+    if (!simulation) {
+      return <></>
+    }
+
+    if (isSimulationStatus(SwapAndCreateSimulationStatus.PerfectRatio)) {
+      return (
         <Box className={classes.unknownWarning}>
           <Tooltip
-            title={'You already have enough tokens to open position.'}
+            title={'You already have enough tokens to open position'}
             classes={{ tooltip: classes.tooltip }}>
             <img
-              src={icons.infoCircle}
+              src={infoIcon}
               alt=''
               width='12px'
               style={{ marginRight: '4px', marginBottom: '-1.5px' }}
@@ -638,78 +700,115 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
           </Tooltip>
           No swap required
         </Box>
-      ) : (
-        <Box
-          className={
-            new BN(simulation?.swapSimulation?.priceImpact ?? 0).lt(
-              toDecimal(+Number(priceImpact).toFixed(4), 2)
-            )
-              ? classes.unknownWarning
-              : classes.errorWarning
-          }>
+      )
+    }
+
+    if (isSimulationStatus(SwapAndCreateSimulationStatus.LiquidityTooLow)) {
+      return (
+        <Box className={classes.errorWarning}>
           <Tooltip
-            title={
-              <>
-                Impact on the price for token exchange.
-                {new BN(simulation?.swapSimulation?.priceImpact ?? 0).gt(
-                  toDecimal(+Number(priceImpact).toFixed(4), 2)
-                ) ? (
-                  <>
-                    {' '}
-                    In order to create position you have to either:
-                    <p>1. Split the position into smaller ones to minimize prize impact.</p>
-                    <p>2. Change swap price impact tolerance in the settings.</p>
-                  </>
-                ) : (
-                  ''
-                )}
-              </>
-            }
+            title={'There is not enough liquidity to perform the swap'}
             classes={{ tooltip: classes.tooltip }}>
             <img
-              src={icons.infoCircle}
+              src={infoIcon}
               alt=''
               width='12px'
               style={{ marginRight: '4px', marginBottom: '-1.5px' }}
-              className={
-                new BN(simulation?.swapSimulation?.priceImpact ?? 0).lte(
-                  toDecimal(+Number(priceImpact).toFixed(4), 2)
-                )
-                  ? classes.grayscaleIcon
-                  : classes.errorIcon
-              }
+              className={classes.errorIcon}
             />
           </Tooltip>
-          Price impact:{' '}
-          {!simulation || !simulation.swapSimulation
-            ? '0'
-            : simulation?.swapSimulation?.priceImpact.gt(new BN(MINIMUM_PRICE_IMPACT))
-              ? Number(
-                  printBN(new BN(simulation?.swapSimulation?.priceImpact), DECIMAL - 2)
-                ).toFixed(2)
-              : `<${Number(printBN(MINIMUM_PRICE_IMPACT, DECIMAL - 2)).toFixed(2)}`}
-          %
+          Insufficient liquidity
         </Box>
-      ),
-    [simulation, alignment, tokenACheckbox, tokenBCheckbox]
-  )
+      )
+    }
+
+    const invalidParameters =
+      isSimulationStatus(SwapAndCreateSimulationStatus.TickAccountMissing) ||
+      isSimulationStatus(SwapAndCreateSimulationStatus.InvalidSimulationParamsError) ||
+      isSimulationStatus(SwapAndCreateSimulationStatus.SwapNotFound) ||
+      isSimulationStatus(SwapAndCreateSimulationStatus.InputAmountTooLow)
+
+    if (invalidParameters) {
+      return (
+        <Box className={classes.errorWarning}>
+          <Tooltip
+            title={'Unable to perform autoswap and open a position'}
+            classes={{ tooltip: classes.tooltip }}>
+            <img
+              src={infoIcon}
+              alt=''
+              width='12px'
+              style={{ marginRight: '4px', marginBottom: '-1.5px' }}
+              className={classes.errorIcon}
+            />
+          </Tooltip>
+          Invalid parameters
+        </Box>
+      )
+    }
+
+    return (
+      <Box className={isPriceImpact ? classes.errorWarning : classes.unknownWarning}>
+        <Tooltip
+          title={
+            <>
+              The price impact resulting from a swap that rebalances the token ratio before a
+              position is opened.
+              {isPriceImpact ? (
+                <>
+                  {' '}
+                  In order to create position you have to either:
+                  <p>1. Open several smaller positions rather than a single large one.</p>
+                  <p>2. Change swap price impact tolerance in the settings.</p>
+                </>
+              ) : (
+                ''
+              )}
+            </>
+          }
+          classes={{ tooltip: classes.tooltip }}>
+          <img
+            src={infoIcon}
+            alt=''
+            width='12px'
+            style={{ marginRight: '4px', marginBottom: '-1.5px' }}
+            className={isPriceImpact ? classes.errorIcon : classes.grayscaleIcon}
+          />
+        </Tooltip>
+        Price impact:{' '}
+        {simulation.swapSimulation!.priceImpact.gt(new BN(MINIMUM_PRICE_IMPACT))
+          ? Number(printBN(new BN(simulation.swapSimulation!.priceImpact), DECIMAL - 2)).toFixed(2)
+          : `<${Number(printBN(MINIMUM_PRICE_IMPACT, DECIMAL - 2)).toFixed(2)}`}
+        %
+      </Box>
+    )
+  }, [isSimulating, simulation, alignment, tokenACheckbox, tokenBCheckbox, throttle, isPriceImpact])
+
   const simulateAutoSwapResult = async () => {
-    if (
-      !autoSwapPoolData ||
-      !autoSwapTicks ||
-      !autoSwapTickmap ||
-      tokenAIndex === null ||
-      tokenBIndex === null ||
-      isLoadingTicksOrTickmap ||
-      !simulationParams.actualPoolPrice
-    ) {
+    setIsSimulating(true)
+    if (autoswapCustomError !== null) {
+      setAutoswapCustomError(null)
+    }
+    if (tokenAIndex === null || tokenBIndex === null || isLoadingTicksOrTickmap) {
       setSimulation(null)
+      setIsSimulating(false)
+      return
+    }
+    if (!autoSwapPoolData || !autoSwapTicks || !autoSwapTickmap || !simulationParams.price) {
+      setAutoswapCustomError(AutoswapCustomError.FetchError)
+      setSimulation(null)
+      setIsSimulating(false)
       return
     }
     const tokenADecimal = tokens[tokenAIndex].decimals
     const tokenBDecimal = tokens[tokenBIndex].decimals
     const tokenAValue = tokenACheckbox ? convertBalanceToBN(valueA, tokenADecimal) : new BN(0)
     const tokenBValue = tokenBCheckbox ? convertBalanceToBN(valueB, tokenBDecimal) : new BN(0)
+    if (tokenAValue.eqn(0) && tokenBValue.eqn(0)) {
+      setSimulation(null)
+      setIsSimulating(false)
+      return
+    }
     const amountX = autoSwapPoolData.tokenX.equals(tokens[tokenAIndex].assetAddress)
       ? tokenAValue
       : tokenBValue
@@ -726,7 +825,8 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
         autoSwapTickmap,
         toDecimal(+Number(slippageToleranceSwap).toFixed(4), 2),
         simulationParams.lowerTickIndex,
-        simulationParams.upperTickIndex
+        simulationParams.upperTickIndex,
+        toDecimal(+Number(utilization).toFixed(4), 2)
       )
     } else {
       result = await simulateAutoSwap(
@@ -739,20 +839,37 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
         toDecimal(+Number(slippageToleranceCreatePosition).toFixed(4), 2),
         simulationParams.lowerTickIndex,
         simulationParams.upperTickIndex,
-        simulationParams.actualPoolPrice
+        simulationParams.price,
+        toDecimal(+Number(utilization).toFixed(4), 2)
       )
     }
     if (result) {
       updateLiquidity(result.position.liquidity)
     }
     setSimulation(result)
+    setIsSimulating(false)
+  }
+
+  const timeoutRef = useRef<number>(0)
+
+  const simulateWithTimeout = () => {
+    setThrottle(true)
+
+    clearTimeout(timeoutRef.current)
+    const timeout = setTimeout(() => {
+      simulateAutoSwapResult().finally(() => {
+        setThrottle(false)
+      })
+    }, 500)
+    timeoutRef.current = timeout as unknown as number
   }
 
   useEffect(() => {
-    if ((tokenACheckbox || tokenBCheckbox) && alignment === DepositOptions.Auto) {
-      simulateAutoSwapResult()
+    if ((tokenACheckbox || tokenBCheckbox) && isAutoswapOn) {
+      simulateWithTimeout()
     }
   }, [
+    alignment,
     simulationParams,
     tokenACheckbox,
     tokenBCheckbox,
@@ -769,7 +886,7 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
   ])
 
   return (
-    <Grid container direction='column' className={classNames(classes.wrapper, className)}>
+    <Grid container className={cx(classes.wrapper, className)}>
       <DepoSitOptionsModal
         initialMaxPriceImpact={initialMaxPriceImpact}
         setMaxPriceImpact={setMaxPriceImpact}
@@ -785,7 +902,7 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
       <Typography className={classes.sectionTitle}>Tokens</Typography>
 
       <Grid container className={classes.sectionWrapper} style={{ marginBottom: 40 }}>
-        <Grid container className={classes.selects} direction='row' justifyContent='space-between'>
+        <Grid container className={classes.selects}>
           <Grid className={classes.selectWrapper}>
             <Select
               tokens={tokens}
@@ -810,7 +927,12 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
           </Grid>
 
           <TooltipHover title='Reverse tokens'>
-            <img className={classes.arrows} src={SwapList} alt='Arrow' onClick={reverseTokens} />
+            <img
+              className={classes.arrows}
+              src={swapListIcon}
+              alt='Arrow'
+              onClick={reverseTokens}
+            />
           </TooltipHover>
 
           <Grid className={classes.selectWrapper}>
@@ -838,13 +960,17 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
         </Grid>
 
         <FeeSwitch
+          containerKey={`${tokenAIndex}` + `${tokenBIndex}`}
+          showTVL={tokenAIndex !== null && tokenBIndex !== null}
           onSelect={fee => {
             setPositionTokens(tokenAIndex, tokenBIndex, fee)
           }}
           feeTiers={feeTiers}
           showOnlyPercents
-          bestTierIndex={bestTierIndex}
           currentValue={feeTierIndex}
+          feeTiersWithTvl={feeTiersWithTvl}
+          totalTvl={totalTvl}
+          isLoadingStats={isLoadingStats}
         />
       </Grid>
       <Grid container className={classes.depositHeader}>
@@ -855,32 +981,32 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
             {!breakpoint630Down &&
               !breakpointMdTo1000 &&
               !brekpoint1270to1350 &&
-              alignment === DepositOptions.Auto &&
+              isAutoswapOn &&
               isAutoSwapAvailable &&
               (tokenACheckbox || tokenBCheckbox) &&
-              renderPriceImpactWarning()}
+              renderWarning()}
             {renderSwitcher()}
           </Box>
         </Box>
         {(breakpoint630Down || breakpointMdTo1000 || brekpoint1270to1350) &&
-          alignment === DepositOptions.Auto &&
+          isAutoswapOn &&
           isAutoSwapAvailable && (
-            <Box className={classes.depositHeaderContainer}>{renderPriceImpactWarning()}</Box>
+            <Box className={classes.depositHeaderContainer}>{renderWarning()}</Box>
           )}
       </Grid>
       <Grid container className={classes.sectionWrapper}>
-        <Box className={classNames(classes.inputWrapper, classes.inputFirst)}>
+        <Box className={cx(classes.inputWrapper, classes.inputFirst)}>
           <Box
             className={classes.checkboxWrapper}
             style={{
-              width: alignment === DepositOptions.Auto ? '31px' : '0px',
-              opacity: alignment === DepositOptions.Auto ? 1 : 0
+              width: isAutoswapOn ? '31px' : '0px',
+              opacity: isAutoswapOn ? 1 : 0
             }}>
             <Tooltip
               title={
                 tokenACheckbox
-                  ? "Disabling this input means you don't need to provide the corresponding token."
-                  : 'Enable to provide this token.'
+                  ? 'Unmark to exclude this token as liquidity available for use in the new position'
+                  : 'Mark to include this token as liquidity available for use in the new position'
               }
               classes={{ tooltip: classes.tooltip }}>
               <Checkbox
@@ -937,18 +1063,19 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
             walletUninitialized={walletStatus !== Status.Initialized}
           />
         </Box>
-        <Box className={classNames(classes.inputWrapper, classes.inputSecond)}>
+        <Box className={cx(classes.inputWrapper, classes.inputSecond)}>
           <Box
             className={classes.checkboxWrapper}
             style={{
-              width: alignment === DepositOptions.Auto ? '31px' : '0px',
-              opacity: alignment === DepositOptions.Auto ? 1 : 0
+              width: isAutoswapOn ? '31px' : '0px',
+              opacity: isAutoswapOn ? 1 : 0
             }}>
+            {' '}
             <Tooltip
               title={
                 tokenBCheckbox
-                  ? "Disabling this input means you don't need to provide the corresponding token."
-                  : 'Enable to provide this token.'
+                  ? 'Unmark to exclude this token as liquidity available for use in the new position'
+                  : 'Mark to include this token as liquidity available for use in the new position'
               }
               classes={{ tooltip: classes.tooltip }}>
               <Checkbox
@@ -1009,97 +1136,97 @@ export const DepositSelector: React.FC<IDepositSelector> = ({
           />
         </Box>
       </Grid>
-      {walletStatus !== Status.Initialized ? (
-        <ChangeWalletButton
-          name='Connect wallet'
-          onConnect={onConnectWallet}
-          connected={false}
-          onDisconnect={onDisconnectWallet}
-          className={classes.connectWalletButton}
-        />
-      ) : getButtonMessage() === 'Insufficient SOL' ? (
-        <TooltipHover
-          title='More SOL is required to cover the transaction fee. Obtain more SOL to complete this transaction.'
-          top={-10}>
-          <div>
-            <AnimatedButton
-              className={classNames(
-                classes.addButton,
-                progress === 'none' ? classes.hoverButton : undefined
-              )}
-              onClick={() => {
-                if (progress === 'none') {
+      <Box width='100%'>
+        {walletStatus !== Status.Initialized ? (
+          <ChangeWalletButton
+            margin={'30px 0'}
+            width={'100%'}
+            height={48}
+            name='Connect wallet'
+            onConnect={onConnectWallet}
+            connected={false}
+            onDisconnect={onDisconnectWallet}
+          />
+        ) : getButtonMessage() === 'Insufficient SOL' ? (
+          <TooltipHover
+            fullSpan
+            title='More SOL is required to cover the transaction fee. Obtain more SOL to complete this transaction.'
+            top={-10}>
+            <Box width={'100%'}>
+              <AnimatedButton
+                className={cx(
+                  classes.addButton,
+                  progress === 'none' ? classes.hoverButton : undefined
+                )}
+                onClick={() => {
+                  if (progress === 'none') {
+                    onAddLiquidity()
+                  }
+                }}
+                disabled={getButtonMessage() !== 'Add Position'}
+                content={getButtonMessage()}
+                progress={progress}
+              />
+            </Box>
+          </TooltipHover>
+        ) : (
+          <AnimatedButton
+            className={cx(classes.addButton, progress === 'none' ? classes.hoverButton : undefined)}
+            onClick={() => {
+              if (progress === 'none' && tokenAIndex !== null && tokenBIndex !== null) {
+                if (!isAutoswapOn) {
                   onAddLiquidity()
-                }
-              }}
-              disabled={getButtonMessage() !== 'Add Position'}
-              content={getButtonMessage()}
-              progress={progress}
-            />
-          </div>
-        </TooltipHover>
-      ) : (
-        <AnimatedButton
-          className={classNames(
-            classes.addButton,
-            progress === 'none' ? classes.hoverButton : undefined
-          )}
-          onClick={() => {
-            if (progress === 'none' && tokenAIndex !== null && tokenBIndex !== null) {
-              if (alignment === DepositOptions.Basic) {
-                onAddLiquidity()
-              } else if (
-                alignment === DepositOptions.Auto &&
-                simulation &&
-                !simulation.swapInput &&
-                !simulation.swapSimulation &&
-                simulation.position
-              ) {
-                onAddLiquidity()
-              } else {
-                if (
-                  (tokenACheckbox || tokenBCheckbox) &&
-                  simulation &&
-                  simulation.swapSimulation &&
-                  simulation.swapInput &&
-                  !!autoSwapPoolData
+                } else if (
+                  isAutoswapOn &&
+                  isSimulationStatus(SwapAndCreateSimulationStatus.PerfectRatio)
                 ) {
-                  const userMinUtilization = toDecimal(+Number(utilization).toFixed(4), 2)
-                  const tokenADecimal = tokens[tokenAIndex].decimals
-                  const tokenBDecimal = tokens[tokenBIndex].decimals
-                  const tokenAValue = tokenACheckbox
-                    ? convertBalanceToBN(valueA, tokenADecimal)
-                    : new BN(0)
-                  const tokenBValue = tokenBCheckbox
-                    ? convertBalanceToBN(valueB, tokenBDecimal)
-                    : new BN(0)
-                  const amountX = autoSwapPoolData.tokenX.equals(tokens[tokenAIndex].assetAddress)
-                    ? tokenAValue
-                    : tokenBValue
-                  const amountY = autoSwapPoolData.tokenY.equals(tokens[tokenBIndex].assetAddress)
-                    ? tokenBValue
-                    : tokenAValue
-                  onSwapAndAddLiquidity(
-                    amountX,
-                    amountY,
-                    simulation.swapInput.swapAmount,
-                    simulation.swapInput.xToY,
-                    simulation.swapInput.byAmountIn,
-                    simulation.swapSimulation.priceAfterSwap,
-                    simulation.swapSimulation.crossedTicks,
-                    toDecimal(+Number(slippageToleranceSwap).toFixed(4), 2),
-                    toDecimal(+Number(slippageToleranceCreatePosition).toFixed(4), 2),
-                    userMinUtilization
-                  )
+                  onAddLiquidity()
+                } else {
+                  if (
+                    (tokenACheckbox || tokenBCheckbox) &&
+                    simulation &&
+                    simulation.swapSimulation &&
+                    simulation.swapInput &&
+                    isSimulationStatus(SwapAndCreateSimulationStatus.Ok) &&
+                    !!autoSwapPoolData
+                  ) {
+                    const userMinUtilization = toDecimal(+Number(utilization).toFixed(4), 2)
+                    const tokenADecimal = tokens[tokenAIndex].decimals
+                    const tokenBDecimal = tokens[tokenBIndex].decimals
+                    const tokenAValue = tokenACheckbox
+                      ? convertBalanceToBN(valueA, tokenADecimal)
+                      : new BN(0)
+                    const tokenBValue = tokenBCheckbox
+                      ? convertBalanceToBN(valueB, tokenBDecimal)
+                      : new BN(0)
+                    const amountX = autoSwapPoolData.tokenX.equals(tokens[tokenAIndex].assetAddress)
+                      ? tokenAValue
+                      : tokenBValue
+                    const amountY = autoSwapPoolData.tokenY.equals(tokens[tokenBIndex].assetAddress)
+                      ? tokenBValue
+                      : tokenAValue
+                    onSwapAndAddLiquidity(
+                      amountX,
+                      amountY,
+                      simulation.swapInput.swapAmount,
+                      simulation.swapInput.xToY,
+                      simulation.swapInput.byAmountIn,
+                      simulation.swapSimulation.priceAfterSwap,
+                      simulation.swapSimulation.crossedTicks,
+                      toDecimal(+Number(slippageToleranceSwap).toFixed(4), 2),
+                      toDecimal(+Number(slippageToleranceCreatePosition).toFixed(4), 2),
+                      userMinUtilization
+                    )
+                  }
                 }
               }
-            }
-          }}
-          disabled={getButtonMessage() !== 'Add Position'}
-          content={getButtonMessage()}
-          progress={progress}
-        />
-      )}
+            }}
+            disabled={getButtonMessage() !== 'Add Position'}
+            content={getButtonMessage()}
+            progress={progress}
+          />
+        )}
+      </Box>
     </Grid>
   )
 }

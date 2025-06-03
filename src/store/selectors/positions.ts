@@ -4,31 +4,37 @@ import { AnyProps, keySelectors } from './helpers'
 import { poolsArraySortedByFees } from './pools'
 import { SwapToken, swapTokensDict } from './solanaWallet'
 import { PoolWithAddress } from '@store/reducers/pools'
+import { calculateClaimAmount, DECIMAL } from '@invariant-labs/sdk-sonic/lib/utils'
+import { initialXtoY, printBN } from '@utils/utils'
 
 const store = (s: AnyProps) => s[positionsSliceName] as IPositionsStore
 
 export const {
   lastPage,
   positionsList,
-  unclaimedFees,
   plotTicks,
   currentPoolIndex,
   prices,
   currentPositionId,
-  currentPositionTicks,
   initPosition,
-  shouldNotUpdateRange
+  shouldNotUpdateRange,
+  positionData,
+  showFeesLoader,
+  shouldDisable,
+  positionListSwitcher
 } = keySelectors(store, [
   'lastPage',
   'positionsList',
   'currentPoolIndex',
-  'unclaimedFees',
   'plotTicks',
   'prices',
   'currentPositionId',
-  'currentPositionTicks',
   'initPosition',
-  'shouldNotUpdateRange'
+  'shouldNotUpdateRange',
+  'positionData',
+  'showFeesLoader',
+  'shouldDisable',
+  'positionListSwitcher'
 ])
 
 export const lastPageSelector = lastPage
@@ -45,6 +51,8 @@ export interface PositionWithPoolData extends PositionWithAddress {
   tokenY: SwapToken
   positionIndex: number
 }
+
+export type PositionData = ReturnType<typeof positionsWithPoolsData>[number]
 
 export const positionsWithPoolsData = createSelector(
   poolsArraySortedByFees,
@@ -69,6 +77,49 @@ export const positionsWithPoolsData = createSelector(
   }
 )
 
+export const positionWithPoolData = createSelector(
+  poolsArraySortedByFees,
+  positionData,
+  swapTokensDict,
+  (allPools, { position }, tokens) => {
+    const poolsByKey: Record<string, PoolWithAddressAndIndex> = {}
+    allPools.forEach((pool, index) => {
+      poolsByKey[pool.address.toString()] = {
+        ...pool,
+        poolIndex: index
+      }
+    })
+
+    return position && poolsByKey[position.pool.toString()]
+      ? {
+          ...position,
+          poolData: poolsByKey[position.pool.toString()],
+          tokenX: tokens[poolsByKey[position.pool.toString()].tokenX.toString()],
+          tokenY: tokens[poolsByKey[position.pool.toString()].tokenY.toString()],
+          isLocked: false,
+          positionIndex: 0
+        }
+      : null
+  }
+)
+export const positionsNavigationData = createSelector(positionsWithPoolsData, positions => {
+  return positions.map(position => {
+    const xToY = initialXtoY(
+      position.tokenX.assetAddress.toString(),
+      position.tokenY.assetAddress.toString()
+    )
+
+    return {
+      tokenXName: xToY ? position.tokenX.symbol : position.tokenY.symbol,
+      tokenYName: xToY ? position.tokenY.symbol : position.tokenX.symbol,
+      tokenXIcon: xToY ? position.tokenX.logoURI : position.tokenY.logoURI,
+      tokenYIcon: xToY ? position.tokenY.logoURI : position.tokenX.logoURI,
+      fee: +printBN(position.poolData.fee, DECIMAL - 2),
+      id: position.id.toString() + '_' + position.pool.toString()
+    }
+  })
+})
+
 export const lockedPositionsWithPoolsData = createSelector(
   poolsArraySortedByFees,
   positionsList,
@@ -89,6 +140,26 @@ export const lockedPositionsWithPoolsData = createSelector(
       positionIndex: index,
       isLocked: true
     }))
+  }
+)
+
+export const lockedPositionsNavigationData = createSelector(
+  lockedPositionsWithPoolsData,
+  lockedPositions => {
+    return lockedPositions.map(position => {
+      const xToY = initialXtoY(
+        position.tokenX.assetAddress.toString(),
+        position.tokenY.assetAddress.toString()
+      )
+      return {
+        tokenXName: xToY ? position.tokenX.symbol : position.tokenY.symbol,
+        tokenYName: xToY ? position.tokenY.symbol : position.tokenX.symbol,
+        tokenXIcon: xToY ? position.tokenX.logoURI : position.tokenY.logoURI,
+        tokenYIcon: xToY ? position.tokenY.logoURI : position.tokenX.logoURI,
+        fee: +printBN(position.poolData.fee, DECIMAL - 2),
+        id: position.id.toString() + '_' + position.pool.toString()
+      }
+    })
   }
 )
 
@@ -117,11 +188,70 @@ export const currentPositionData = createSelector(
   }
 )
 
+export const totalUnlaimedFees = createSelector(
+  positionsWithPoolsData,
+  lockedPositionsWithPoolsData,
+  prices,
+  (positions, lockedPositions, pricesData) => {
+    const isLoading =
+      positions.some(position => position.ticksLoading) ||
+      lockedPositions.some(position => position.ticksLoading)
+
+    const totalUnlocked = positions.reduce((acc: number, position) => {
+      const [bnX, bnY] = calculateClaimAmount({
+        position,
+        tickLower: position.lowerTick,
+        tickUpper: position.upperTick,
+        tickCurrent: position.poolData.currentTickIndex,
+        feeGrowthGlobalX: position.poolData.feeGrowthGlobalX,
+        feeGrowthGlobalY: position.poolData.feeGrowthGlobalY
+      })
+
+      const xValue =
+        +printBN(bnX, position.tokenX.decimals) *
+        (pricesData.data[position.tokenX.assetAddress.toString()] ?? 0)
+      const yValue =
+        +printBN(bnY, position.tokenY.decimals) *
+        (pricesData.data[position.tokenY.assetAddress.toString()] ?? 0)
+
+      return acc + xValue + yValue
+    }, 0)
+
+    const totalLocked = lockedPositions.reduce((acc: number, position) => {
+      const [bnX, bnY] = calculateClaimAmount({
+        position,
+        tickLower: position.lowerTick,
+        tickUpper: position.upperTick,
+        tickCurrent: position.poolData.currentTickIndex,
+        feeGrowthGlobalX: position.poolData.feeGrowthGlobalX,
+        feeGrowthGlobalY: position.poolData.feeGrowthGlobalY
+      })
+
+      const xValue =
+        +printBN(bnX, position.tokenX.decimals) *
+        (pricesData.data[position.tokenX.assetAddress.toString()] ?? 0)
+      const yValue =
+        +printBN(bnY, position.tokenY.decimals) *
+        (pricesData.data[position.tokenY.assetAddress.toString()] ?? 0)
+
+      return acc + xValue + yValue
+    }, 0)
+
+    return {
+      total: {
+        totalUnlocked,
+        totalLocked
+      },
+      isLoading
+    }
+  }
+)
+
 export const positionsSelectors = {
   positionsList,
   plotTicks,
   currentPositionId,
-  currentPositionTicks,
+  showFeesLoader,
   initPosition,
   shouldNotUpdateRange
 }

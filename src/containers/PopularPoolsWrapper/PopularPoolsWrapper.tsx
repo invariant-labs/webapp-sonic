@@ -2,11 +2,11 @@ import React, { useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import PopularPools from '@components/PopularPools/PopularPools'
 import { isLoading, poolsStatsWithTokensDetails } from '@store/selectors/stats'
-import icons from '@static/icons'
+import { unknownTokenIcon } from '@static/icons'
 import { actions } from '@store/reducers/stats'
 import { Grid } from '@mui/material'
 import { network } from '@store/selectors/solanaConnection'
-import { getPopularPools } from '@store/consts/static'
+import { DEFAULT_PUBLICKEY, getPopularPools, Intervals } from '@store/consts/static'
 import { PublicKey } from '@solana/web3.js'
 
 export interface PopularPoolData {
@@ -42,14 +42,24 @@ export const PopularPoolsWrapper: React.FC = () => {
 
     let popularPools = getPopularPools(currentNetwork)
     if (popularPools.length === 0) {
-      popularPools = poolsList
-        .sort((a, b) => b.volume24 - a.volume24)
-        .slice(0, 4)
-        .map(pool => ({
-          tokenX: pool.tokenX.toString(),
-          tokenY: pool.tokenY.toString(),
-          fee: pool.fee.toString()
-        }))
+      if (poolsList.length === 0) {
+        popularPools = Array(4)
+          .fill(0)
+          .map((_, idx) => ({
+            tokenX: DEFAULT_PUBLICKEY.toString(),
+            tokenY: DEFAULT_PUBLICKEY.toString(),
+            fee: idx.toString()
+          }))
+      } else {
+        popularPools = poolsList
+          .sort((a, b) => b.volume24 - a.volume24)
+          .slice(0, 4)
+          .map(pool => ({
+            tokenX: pool.tokenX.toString(),
+            tokenY: pool.tokenY.toString(),
+            fee: pool.fee.toString()
+          }))
+      }
     }
 
     popularPools.map(pool => {
@@ -64,8 +74,8 @@ export const PopularPoolsWrapper: React.FC = () => {
           poolAddress: poolData.poolAddress,
           symbolFrom: poolData?.tokenXDetails?.symbol ?? pool.tokenX,
           symbolTo: poolData?.tokenYDetails?.symbol ?? pool.tokenY,
-          iconFrom: poolData?.tokenXDetails?.logoURI ?? icons.unknownToken,
-          iconTo: poolData?.tokenYDetails?.logoURI ?? icons.unknownToken,
+          iconFrom: poolData?.tokenXDetails?.logoURI ?? unknownTokenIcon,
+          iconTo: poolData?.tokenYDetails?.logoURI ?? unknownTokenIcon,
           volume: poolData.volume24,
           TVL: poolData.tvl,
           fee: poolData.fee,
@@ -92,11 +102,12 @@ export const PopularPoolsWrapper: React.FC = () => {
   }, [poolsList])
 
   const showAPY = useMemo(() => {
-    return list.some(pool => pool.apy !== 0)
+    return true
+    // return list.some(pool => pool.apy !== 0)
   }, [list])
 
   useEffect(() => {
-    dispatch(actions.getCurrentStats())
+    dispatch(actions.getCurrentIntervalStats({ interval: Intervals.Daily }))
   }, [])
 
   return (
