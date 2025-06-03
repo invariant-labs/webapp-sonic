@@ -22,7 +22,6 @@ import { addressToTicker, initialXtoY, parseFeeToPathFee, ROUTES } from '@utils/
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStyles } from './style'
-
 import { SwapToken } from '@store/selectors/solanaWallet'
 import { useProcessedTokens } from '@store/hooks/userOverview/useProcessedToken'
 import { Overview } from './Overview/Overview/Overview'
@@ -302,7 +301,6 @@ const Portfolio: React.FC<IProps> = ({
           handleClosePosition={handleClosePosition}
           handleClaimFee={handleClaimFee}
           createNewPosition={() => {
-            console.log(element)
             createNewPosition(element)
           }}
         />

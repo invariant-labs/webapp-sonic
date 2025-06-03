@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { colors, theme } from '@static/theme'
 import { useStyles } from './style'
 import { Box, Grid, Typography, useMediaQuery } from '@mui/material'
@@ -99,7 +99,6 @@ const PoolListItem: React.FC<IProps> = ({
   const isSm = useMediaQuery(theme.breakpoints.down('sm'))
   const isSmd = useMediaQuery(theme.breakpoints.down('md'))
   const isMd = useMediaQuery(theme.breakpoints.down(1160))
-  const lockIconRef = useRef<HTMLButtonElement>(null)
   const intervalSuffix = mapIntervalToString(interval)
 
   const isXtoY = initialXtoY(addressFrom ?? '', addressTo ?? '')
@@ -217,9 +216,9 @@ const PoolListItem: React.FC<IProps> = ({
       </button>
       {isLocked && (
         <TooltipHover
+          maxWidth='none'
           title={
             <LockStatsPopover
-              anchorEl={lockIconRef.current}
               lockedX={tokenAData.locked}
               lockedY={tokenBData.locked}
               symbolX={shortenAddress(tokenAData.symbol ?? '')}
@@ -230,8 +229,7 @@ const PoolListItem: React.FC<IProps> = ({
           }>
           <button
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            className={classes.actionButton}
-            ref={lockIconRef}>
+            className={classes.actionButton}>
             <img width={28} src={lockIcon} alt={'Lock info'} />
           </button>
         </TooltipHover>
@@ -316,9 +314,9 @@ const PoolListItem: React.FC<IProps> = ({
             <Box className={classes.action}>
               {isLocked && (
                 <TooltipHover
+                  maxWidth='none'
                   title={
                     <LockStatsPopover
-                      anchorEl={lockIconRef.current}
                       lockedX={tokenAData.locked}
                       lockedY={tokenBData.locked}
                       symbolX={shortenAddress(tokenAData.symbol ?? '')}
@@ -327,7 +325,7 @@ const PoolListItem: React.FC<IProps> = ({
                       liquidityY={tokenBData.liquidity}
                     />
                   }>
-                  <button className={classes.actionButton} ref={lockIconRef}>
+                  <button className={classes.actionButton}>
                     <img width={32} height={32} src={lockIcon} alt={'Lock info'} />
                   </button>
                 </TooltipHover>

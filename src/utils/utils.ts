@@ -2024,11 +2024,14 @@ export const getIntervalsFullSnap = async (
   name: string,
   interval: Intervals
 ): Promise<FullSnap> => {
+  const parsedInterval =
+    interval === Intervals.Daily ? 'daily' : interval === Intervals.Weekly ? 'weekly' : 'monthly'
   const { data } = await axios.get<FullSnap>(
-    `https://stats.invariant.app/sonic/intervals/sonic-${name}?interval=${interval}`
+    `https://stats.invariant.app/sonic/intervals/sonic-${name}?interval=${parsedInterval}`
   )
   return data
 }
+
 export const isValidPublicKey = (keyString?: string | null) => {
   try {
     if (!keyString) {
