@@ -263,8 +263,7 @@ export const PositionHeader = ({
                   </>
                 )
               }
-              placement='top'
-              increasePadding>
+              placement='top'>
               <Box
                 className={cx(classes.feeContainer, {
                   [classes.feeContainerIsActive]: isActive
