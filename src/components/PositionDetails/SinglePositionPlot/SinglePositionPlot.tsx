@@ -5,6 +5,7 @@ import {
   calcTicksAmountInRange,
   calculateConcentration,
   formatNumberWithoutSuffix,
+  formatNumberWithSuffix,
   numberToString,
   spacingMultiplicityGte,
   truncateString
@@ -227,8 +228,8 @@ const SinglePositionPlot: React.FC<ISinglePositionPlot> = ({
     setPlotMax(rangeCenter + diff / 2)
   }
 
-  const minPercentage = (min / currentPrice - 1) * 100
-  const maxPercentage = (max / currentPrice - 1) * 100
+  const minPercentage = ((+min - currentPrice) / currentPrice) * 100
+  const maxPercentage = ((+max - currentPrice) / currentPrice) * 100
   const concentration = calculateConcentration(leftRange.index, rightRange.index)
 
   return (
@@ -376,7 +377,12 @@ const SinglePositionPlot: React.FC<ISinglePositionPlot> = ({
                     color: minPercentage < 0 ? colors.invariant.Error : colors.invariant.green
                   }}>
                   {minPercentage > 0 && '+'}
-                  {minPercentage.toFixed(2)}%
+                  {formatNumberWithSuffix(minPercentage.toString(), {
+                    decimalsAfterDot: 2,
+                    noSubNumbers: true,
+                    alternativeConfig: true
+                  })}
+                  %
                 </Typography>
               </Box>
             }
@@ -394,7 +400,12 @@ const SinglePositionPlot: React.FC<ISinglePositionPlot> = ({
                     color: maxPercentage < 0 ? colors.invariant.Error : colors.invariant.green
                   }}>
                   {maxPercentage > 0 && '+'}
-                  {maxPercentage.toFixed(2)}%
+                  {formatNumberWithSuffix(maxPercentage.toString(), {
+                    decimalsAfterDot: 2,
+                    noSubNumbers: true,
+                    alternativeConfig: true
+                  })}
+                  %
                 </Typography>
               </Box>
             }

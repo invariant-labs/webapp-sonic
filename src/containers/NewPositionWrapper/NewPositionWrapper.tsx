@@ -686,6 +686,9 @@ export const NewPositionWrapper: React.FC<IProps> = ({
   }, [])
 
   const { feeTiersWithTvl, totalTvl } = useMemo(() => {
+    if (tokenAIndex === null || tokenBIndex === null) {
+      return { feeTiersWithTvl: {}, totalTvl: 0 }
+    }
     const feeTiersWithTvl: Record<number, number> = {}
     let totalTvl = 0
 
