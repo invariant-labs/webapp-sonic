@@ -475,7 +475,28 @@ export const getPopularPools = (
 ): { tokenX: string; tokenY: string; fee: string }[] => {
   switch (network) {
     case NetworkType.Mainnet:
-      return []
+      return [
+        {
+          tokenX: 'HbDgpvHVxeNSRCGEUFvapCYmtYfqxexWcCbxtYecruy8',
+          tokenY: 'qPzdrTCvxK3bxoh2YoTZtDcGVgRUwm37aQcC3abFgBy',
+          fee: '0.01'
+        },
+        {
+          tokenX: 'HbDgpvHVxeNSRCGEUFvapCYmtYfqxexWcCbxtYecruy8',
+          tokenY: 'So11111111111111111111111111111111111111112',
+          fee: '0.1'
+        },
+        {
+          tokenX: 'HbDgpvHVxeNSRCGEUFvapCYmtYfqxexWcCbxtYecruy8',
+          tokenY: 'So11111111111111111111111111111111111111112',
+          fee: '0.3'
+        },
+        {
+          tokenX: 'HbDgpvHVxeNSRCGEUFvapCYmtYfqxexWcCbxtYecruy8',
+          tokenY: 'So11111111111111111111111111111111111111112',
+          fee: '0.05'
+        }
+      ]
     case NetworkType.Testnet:
       return [
         {
