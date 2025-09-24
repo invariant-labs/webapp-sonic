@@ -97,6 +97,7 @@ import withdrawIcon from './svg/withdrawIcon.svg'
 import centerToRangeIcon from './svg/centerToRange.svg'
 import warning3 from './svg/warning3.svg'
 import connectWalletIcon from './svg/connectWalletIcon.svg'
+import fogoGlow from './svg/fogoGlow.svg'
 
 export {
   logoTitleIcon,
@@ -202,7 +203,8 @@ export {
 export const chainIcons = {
   eclipseGlow: eclipseGlowIcon,
   sonicGlow: sonicGlowIcon,
-  solanaGlow: solanaGlowIcon
+  solanaGlow: solanaGlowIcon,
+  fogoGlow: fogoGlow
 }
 
 export const netowrkIcons = {

@@ -412,7 +412,16 @@ export const CHAINS = [
     address: 'https://eclipse.invariant.app/exchange',
     iconGlow: 'eclipseGlow'
   },
-  { name: Chain.Sonic, address: 'https://sonic.invariant.app/swap', iconGlow: 'sonicGlow' }
+  {
+    name: Chain.Fogo,
+    address: 'https://fogo.invariant.app/exchange',
+    iconGlow: 'fogoGlow'
+  },
+  {
+    name: Chain.Sonic,
+    address: 'https://sonic.invariant.app/exchange',
+    iconGlow: 'sonicGlow'
+  }
 ]
 
 export const enum SortTypePoolList {
