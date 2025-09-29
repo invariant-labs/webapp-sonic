@@ -131,7 +131,8 @@ export enum Chain {
   AlephZero = 'Aleph Zero',
   Eclipse = 'Eclipse',
   Vara = 'Vara',
-  Sonic = 'Sonic'
+  Sonic = 'Sonic',
+  Fogo = 'Fogo'
 }
 
 export interface SnapshotValueData {
